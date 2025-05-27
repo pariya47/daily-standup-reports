@@ -198,3 +198,85 @@ describe('Dashboard Integration Tests - Report Granularity', () => {
     await screen.findByText(/Oct 26, 2023/i); // Daily content re-loaded
   });
 });
+
+describe('Dashboard Integration Tests - Report Navigation Sorting', () => {
+  // Mock data specifically for testing sorting
+  // Sorted by date desc (as Supabase would), component will sort by teamName asc for same date
+  const sortedMockReportsData: Report[] = [
+    { id: 'd1', content: 'Report Alpha May 27', createdAt: new Date('2023-05-27T10:00:00Z'), teamName: 'Alpha Team', reportType: 'daily' },
+    { id: 'd2', content: 'Report Bravo May 27', createdAt: new Date('2023-05-27T10:00:00Z'), teamName: 'Bravo Team', reportType: 'daily' },
+    { id: 'd3', content: 'Report Charlie May 27', createdAt: new Date('2023-05-27T10:00:00Z'), teamName: 'Charlie Team', reportType: 'daily' },
+    { id: 'd4', content: 'Report Alpha May 26', createdAt: new Date('2023-05-26T11:00:00Z'), teamName: 'Alpha Team', reportType: 'daily' },
+    { id: 'd5', content: 'Report Bravo May 26', createdAt: new Date('2023-05-26T09:00:00Z'), teamName: 'Bravo Team', reportType: 'daily' },
+  ];
+  // This is how they should be after the component's internal sort
+  const expectedOrderAfterComponentSort: Partial<Report>[] = [
+    { teamName: 'Alpha Team', date: 'May 27', id: 'd1' }, // Dates are for easy title check
+    { teamName: 'Bravo Team', date: 'May 27', id: 'd2' },
+    { teamName: 'Charlie Team', date: 'May 27', id: 'd3' },
+    { teamName: 'Alpha Team', date: 'May 26', id: 'd4' },
+    { teamName: 'Bravo Team', date: 'May 26', id: 'd5' },
+  ];
+
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (supabaseLib.fetchDailyReports as jest.Mock).mockResolvedValue([...sortedMockReportsData]); // Use a copy
+    (supabaseLib.fetchWeeklyReports as jest.Mock).mockResolvedValue([]);
+    (supabaseLib.fetchMonthlyReports as jest.Mock).mockResolvedValue([]);
+  });
+
+  test('should navigate reports in correct sort order (date desc, teamName asc)', async () => {
+    render(<Dashboard />);
+
+    // Wait for initial load (Daily reports by default)
+    await screen.findByText(/Daily Reports/i);
+    // Check that the sidebar has the correct groups (latest date first)
+    await screen.findByText(/May 27, 2023/i);
+    await screen.findByText(/May 26, 2023/i);
+
+    // 1. Initial selection should be the first report after sorting
+    // The dashboard title combines date and team name. Example: "27 May: Alpha Team"
+    let expectedReport = expectedOrderAfterComponentSort[0];
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: new RegExp(`${expectedReport.date}.*${expectedReport.teamName}`, 'i') })).toBeInTheDocument();
+    });
+    
+    // 2. Navigate "Next"
+    const nextButton = screen.getByRole('button', { name: /Next report/i });
+    for (let i = 1; i < expectedOrderAfterComponentSort.length; i++) {
+      fireEvent.click(nextButton);
+      expectedReport = expectedOrderAfterComponentSort[i];
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: new RegExp(`${expectedReport.date}.*${expectedReport.teamName}`, 'i') })).toBeInTheDocument();
+      });
+    }
+
+    // 3. At the last report, "Next" button should be disabled (or do nothing)
+    // Current selected is the last one: expectedOrderAfterComponentSort[4]
+    // The NavigationButtons component has logic for hasNext using reports.findIndex((r) => r.id === selectedReport?.id) > 0
+    // hasNext is true if index > 0. So for the last item (index 4), next button (handlePrevious in component) should be enabled
+    // And previous button (handleNext in component) should be disabled.
+    // Let's re-check button state logic.
+    // `hasPrevious={reports.findIndex((r) => r.id === selectedReport?.id) < reports.length - 1}` (this is "Next" in UI)
+    // `hasNext={reports.findIndex((r) => r.id === selectedReport?.id) > 0}` (this is "Previous" in UI)
+    // So, when at the last report (index 4), findIndex is 4. reports.length is 5. 4 < 4 is false. So "Next" (UI) is disabled. Correct.
+    expect(nextButton).toBeDisabled();
+
+
+    // 4. Navigate "Previous"
+    const previousButton = screen.getByRole('button', { name: /Previous report/i });
+    expect(previousButton).toBeEnabled(); // Should be enabled as we are not at the first report
+
+    for (let i = expectedOrderAfterComponentSort.length - 2; i >= 0; i--) {
+      fireEvent.click(previousButton);
+      expectedReport = expectedOrderAfterComponentSort[i];
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: new RegExp(`${expectedReport.date}.*${expectedReport.teamName}`, 'i') })).toBeInTheDocument();
+      });
+    }
+
+    // 5. At the first report, "Previous" button should be disabled
+    expect(previousButton).toBeDisabled();
+  });
+});

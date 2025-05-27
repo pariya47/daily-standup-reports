@@ -43,6 +43,16 @@ export function Dashboard() {
         } else if (reportType === "monthly") {
           fetchedReports = await fetchMonthlyReports()
         }
+
+        // Sort reports: primary by createdAt (desc), secondary by teamName (asc)
+        fetchedReports.sort((a, b) => {
+          if (a.createdAt > b.createdAt) return -1;
+          if (a.createdAt < b.createdAt) return 1;
+          if (a.teamName < b.teamName) return -1;
+          if (a.teamName > b.teamName) return 1;
+          return 0;
+        });
+        
         setReports(fetchedReports)
 
         if (fetchedReports.length > 0) {
