@@ -45,6 +45,15 @@ No blockers at the moment.`,
       createdAt: new Date(Date.now() - index * (reportType === 'daily' ? 1 : reportType === 'weekly' ? 7 : 30) * 24 * 60 * 60 * 1000), // Days ago
       teamName: team,
       reportType: reportType,
+      progress: index % 3 === 0 
+        ? [`Mock progress item 1 for ${team} ${reportType} ${index + 1}`, "Mock progress item 2"] 
+        : (index % 3 === 1 ? ["Another progress item"] : []),
+      blockers: index % 4 === 0 
+        ? [`Mock blocker for ${team} ${reportType} ${index + 1}`] 
+        : (index % 4 === 1 ? [] : undefined), // undefined for some cases
+      nextSteps: index % 2 === 0 
+        ? [`Mock next step 1 for ${team} ${reportType} ${index + 1}`, `Mock next step 2`]
+        : [`A single next step for ${team} ${reportType} ${index + 1}`],
     }))
   })
 }
@@ -58,7 +67,7 @@ export async function fetchDailyReports(): Promise<Report[]> {
 
   const { data, error } = await supabase
     .from("standup")
-    .select("*")
+    .select("*, progress, blockers, next_steps")
     .order("created_at", { ascending: false })
 
   if (error) {
@@ -79,7 +88,7 @@ export async function fetchWeeklyReports(): Promise<Report[]> {
 
   const { data, error } = await supabase
     .from("weekly_reports")
-    .select("*")
+    .select("*, progress, blockers, next_steps")
     .order("created_at", { ascending: false })
 
   if (error) {
@@ -100,7 +109,7 @@ export async function fetchMonthlyReports(): Promise<Report[]> {
 
   const { data, error } = await supabase
     .from("monthly_reports")
-    .select("*")
+    .select("*, progress, blockers, next_steps")
     .order("created_at", { ascending: false })
 
   if (error) {

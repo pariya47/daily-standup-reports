@@ -152,23 +152,79 @@ function renderMarkdownLike(content: string): JSX.Element {
 
 export function FullReport({ report }: FullReportProps) {
   const renderedContent = useMemo(() => {
-    if (!report?.content) return null
-    return renderMarkdownLike(report.content)
-  }, [report?.content])
+    if (!report) {
+      return <div className="whitespace-pre-wrap text-sm md:text-base leading-relaxed">No report data available.</div>;
+    }
+
+    const hasProgress = report.progress && report.progress.length > 0;
+    const hasBlockers = report.blockers && report.blockers.length > 0;
+    const hasNextSteps = report.nextSteps && report.nextSteps.length > 0;
+
+    if (hasProgress || hasBlockers || hasNextSteps) {
+      return (
+        <div className="text-sm md:text-base">
+          {/* Progress Section */}
+          <h3 className="text-base md:text-lg font-bold mb-2 mt-2 md:mt-4">Progress</h3>
+          {hasProgress ? (
+            <ul className="list-disc ml-4 md:ml-6 mb-3 md:mb-4 space-y-1">
+              {report.progress!.map((item, index) => (
+                <li key={`prog-${index}`} className="mb-1">
+                  {parseInlineFormatting(item)}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-3 md:mb-4 italic">No progress items reported.</p>
+          )}
+
+          {/* Blockers Section */}
+          <h3 className="text-base md:text-lg font-bold mb-2 mt-2 md:mt-4">Blockers</h3>
+          {hasBlockers ? (
+            <ul className="list-disc ml-4 md:ml-6 mb-3 md:mb-4 space-y-1">
+              {report.blockers!.map((item, index) => (
+                <li key={`block-${index}`} className="mb-1">
+                  {parseInlineFormatting(item)}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-3 md:mb-4 italic">No blockers reported.</p>
+          )}
+
+          {/* Next Steps Section */}
+          <h3 className="text-base md:text-lg font-bold mb-2 mt-2 md:mt-4">Next Steps</h3>
+          {hasNextSteps ? (
+            <ul className="list-disc ml-4 md:ml-6 mb-3 md:mb-4 space-y-1">
+              {report.nextSteps!.map((item, index) => (
+                <li key={`next-${index}`} className="mb-1">
+                  {parseInlineFormatting(item)}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-3 md:mb-4 italic">No next steps defined.</p>
+          )}
+        </div>
+      );
+    }
+
+    // Fallback to existing content rendering
+    if (report.content) {
+      return renderMarkdownLike(report.content);
+    }
+
+    return <div className="whitespace-pre-wrap text-sm md:text-base leading-relaxed">No content available for this report.</div>;
+  }, [report]);
 
   return (
     <Card className="w-full h-full min-h-[400px] md:min-h-[600px]">
       <CardContent className="p-2 md:p-4 h-full">
         <ScrollArea className="h-full pr-2 md:pr-4">
           <div className="min-h-full">
-            {renderedContent || (
-              <div className="whitespace-pre-wrap text-sm md:text-base leading-relaxed">
-                {report?.content || "No content available"}
-              </div>
-            )}
+            {renderedContent}
           </div>
         </ScrollArea>
       </CardContent>
     </Card>
-  )
+  );
 }

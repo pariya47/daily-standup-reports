@@ -4,6 +4,9 @@ export interface Report {
   createdAt: Date
   teamName: string
   reportType?: ReportType
+  progress?: string[]
+  blockers?: string[]
+  nextSteps?: string[]
 }
 
 export type ReportType = 'daily' | 'weekly' | 'monthly';
