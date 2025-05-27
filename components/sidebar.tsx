@@ -31,80 +31,127 @@ const getWeekId = (date: Date) => `${getYear(date)}-${format(date, "II")}` // IS
 
 // Grouping functions
 const groupReportsByDate = (reports: Report[]): GroupedReports[] => {
-  const groups: Record<string, Report[]> = {}
-  reports.forEach((report) => {
-    const dateStr = format(report.createdAt, "yyyy-MM-dd")
-    if (!groups[dateStr]) groups[dateStr] = []
-    groups[dateStr].push(report)
-  })
+  const groups: Record<string, Report[]> = {};
+  const validReports = reports.filter(report => {
+    const isValid = report.createdAt instanceof Date && !isNaN(report.createdAt.getTime());
+    if (!isValid) {
+      console.warn(`Sidebar (groupReportsByDate): Filtering out report ID ${report.id} due to invalid createdAt:`, report.createdAt);
+    }
+    return isValid;
+  });
+
+  validReports.forEach((report) => {
+    const dateStr = format(report.createdAt!, "yyyy-MM-dd");
+    if (!groups[dateStr]) groups[dateStr] = [];
+    groups[dateStr].push(report);
+  });
+
   return Object.entries(groups)
     .map(([date, reps]) => ({
       period: date,
       reports: reps,
-      periodTitle: format(new Date(date), "MMM d, yyyy"),
+      periodTitle: format(new Date(date), "MMM d, yyyy"), // new Date(date) is safe as date string is from format
     }))
-    .sort((a, b) => new Date(b.period).getTime() - new Date(a.period).getTime())
-}
+    .sort((a, b) => new Date(b.period).getTime() - new Date(a.period).getTime());
+};
 
 const groupReportsByWeek = (reports: Report[]): GroupedReports[] => {
-  const groups: Record<string, Report[]> = {}
-  reports.forEach((report) => {
-    const weekId = getWeekId(report.createdAt)
-    if (!groups[weekId]) groups[weekId] = []
-    groups[weekId].push(report)
-  })
+  const groups: Record<string, Report[]> = {};
+  const validReports = reports.filter(report => {
+    const isValid = report.createdAt instanceof Date && !isNaN(report.createdAt.getTime());
+    if (!isValid) {
+      console.warn(`Sidebar (groupReportsByWeek): Filtering out report ID ${report.id} due to invalid createdAt:`, report.createdAt);
+    }
+    return isValid;
+  });
+
+  validReports.forEach((report) => {
+    const weekId = getWeekId(report.createdAt!); // Non-null assertion safe
+    if (!groups[weekId]) groups[weekId] = [];
+    groups[weekId].push(report);
+  });
+
   return Object.entries(groups)
     .map(([weekId, reps]) => {
-      const firstReportDate = reps[0].createdAt
-      const weekStart = startOfWeek(firstReportDate, { weekStartsOn: 1 }) // Assuming week starts on Monday
-      const weekEnd = endOfWeek(firstReportDate, { weekStartsOn: 1 })
+      // reps will not be empty and reps[0].createdAt will be valid due to filtering
+      const firstReportDate = reps[0].createdAt!;
+      const weekStart = startOfWeek(firstReportDate, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(firstReportDate, { weekStartsOn: 1 });
       return {
         period: weekId,
         reports: reps,
         periodTitle: `Week of ${format(weekStart, "MMM d")} - ${format(weekEnd, "MMM d, yyyy")}`,
-      }
+      };
     })
-    .sort((a, b) => b.period.localeCompare(a.period)) // Sort by YYYY-WW string
-}
+    .sort((a, b) => b.period.localeCompare(a.period)); // Sort by YYYY-WW string
+};
 
 const groupReportsByMonth = (reports: Report[]): GroupedReports[] => {
-  const groups: Record<string, Report[]> = {}
-  reports.forEach((report) => {
-    const monthId = format(report.createdAt, "yyyy-MM")
-    if (!groups[monthId]) groups[monthId] = []
-    groups[monthId].push(report)
-  })
+  const groups: Record<string, Report[]> = {};
+  const validReports = reports.filter(report => {
+    const isValid = report.createdAt instanceof Date && !isNaN(report.createdAt.getTime());
+    if (!isValid) {
+      console.warn(`Sidebar (groupReportsByMonth): Filtering out report ID ${report.id} due to invalid createdAt:`, report.createdAt);
+    }
+    return isValid;
+  });
+
+  validReports.forEach((report) => {
+    const monthId = format(report.createdAt!, "yyyy-MM"); // Non-null assertion safe
+    if (!groups[monthId]) groups[monthId] = [];
+    groups[monthId].push(report);
+  });
+
   return Object.entries(groups)
     .map(([monthId, reps]) => ({
       period: monthId,
       reports: reps,
-      periodTitle: format(reps[0].createdAt, "MMMM yyyy"),
+      // reps[0].createdAt will be valid due to filtering
+      periodTitle: format(reps[0].createdAt!, "MMMM yyyy"),
     }))
-    .sort((a, b) => b.period.localeCompare(a.period)) // Sort by YYYY-MM string
-}
+    .sort((a, b) => b.period.localeCompare(a.period)); // Sort by YYYY-MM string
+};
 
 // Function to create a summary report from multiple reports
 function createPeriodSummary(reports: Report[], periodIdentifier: string, reportType: ReportType, periodTitle: string): Report {
+  // Reports array here is assumed to have been filtered by grouping functions,
+  // so report.createdAt should be valid for all reports in the array.
   const combinedContent = reports
     .map((report) => {
-      return report.content == null || report.content === "" ? "" : `## ${report.teamName} (${format(report.createdAt, "MMM d")})\n\n${report.content}`
+      // report.createdAt is valid here due to prior filtering
+      return report.content == null || report.content === "" ? "" : `## ${report.teamName} (${format(report.createdAt!, "MMM d")})\n\n${report.content}`;
     })
-    .join("\n\n---\n\n")
+    .join("\n\n---\n\n");
 
-  let titlePrefix = "Summary"
-  if (reportType === "daily") titlePrefix = "Daily Summary"
-  else if (reportType === "weekly") titlePrefix = "Weekly Summary"
-  else if (reportType === "monthly") titlePrefix = "Monthly Summary"
+  let titlePrefix = "Summary";
+  if (reportType === "daily") titlePrefix = "Daily Summary";
+  else if (reportType === "weekly") titlePrefix = "Weekly Summary";
+  else if (reportType === "monthly") titlePrefix = "Monthly Summary";
   
-  // Use the first report's createdAt for the summary's createdAt, or generate based on periodIdentifier
-  let summaryDate = new Date()
-  if (reports.length > 0) {
-    summaryDate = reports[0].createdAt; // Default to first report's date
-  }
-  if (reportType === 'daily') summaryDate = new Date(periodIdentifier);
-  else if (reportType === 'weekly') summaryDate = startOfWeek(new Date(reports[0]?.createdAt || periodIdentifier.split('-W')[0] + '-01-01'), { weekStartsOn: 1 }); // Approx
-  else if (reportType === 'monthly') summaryDate = startOfMonth(new Date(reports[0]?.createdAt || periodIdentifier + '-01'));
+  let summaryDate: Date;
+  // Attempt to derive summaryDate from the first valid report, or periodIdentifier, or fallback to now.
+  const firstValidReport = reports.find(r => r.createdAt instanceof Date && !isNaN(r.createdAt.getTime()));
 
+  if (reportType === 'daily') {
+    summaryDate = new Date(periodIdentifier); // periodIdentifier is 'yyyy-MM-dd'
+  } else if (reportType === 'weekly') {
+    // periodIdentifier is 'YYYY-WW'. Need to parse YYYY.
+    // Use start of the week from first valid report if available, otherwise parse from periodIdentifier.
+    const yearFromPeriod = parseInt(periodIdentifier.split('-')[0], 10);
+    const weekFromPeriod = parseInt(periodIdentifier.split('-')[1], 10);
+    // Create a date for Jan 1st of the year, then add weeks. This is complex with date-fns.
+    // Simpler: use first valid report's date or a rough estimate from periodIdentifier.
+    const baseDateForWeek = firstValidReport?.createdAt || new Date(yearFromPeriod, 0, 1 + (weekFromPeriod -1) * 7); // Approximate
+    summaryDate = startOfWeek(baseDateForWeek, { weekStartsOn: 1 });
+  } else if (reportType === 'monthly') {
+    // periodIdentifier is 'yyyy-MM'
+    const year = parseInt(periodIdentifier.split('-')[0], 10);
+    const month = parseInt(periodIdentifier.split('-')[1], 10) -1; // Date constructor month is 0-indexed
+    summaryDate = startOfMonth(new Date(year, month, 1));
+  } else {
+    // Fallback if reportType is unexpected, or if above logic fails to set a date
+    summaryDate = firstValidReport?.createdAt || new Date();
+  }
 
   return {
     id: `summary-${reportType}-${periodIdentifier}`,
