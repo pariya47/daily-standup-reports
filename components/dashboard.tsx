@@ -11,14 +11,8 @@ import { NavigationButtons } from "@/components/navigation-buttons"
 import { StopWordFilter } from "@/components/stop-word-filter"
 import { ReferencesDrawer } from "@/components/references-drawer"
 import { CommandDialogDemo } from "@/components/cmd"
-import type { Report } from "@/lib/types"
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.POSTGRES_NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.POSTGRES_NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-// Create client only if URL and key are available
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
+import type { Report, ReportType } from "@/lib/types"
+import { fetchDailyReports, fetchWeeklyReports, fetchMonthlyReports } from "@/lib/supabase"
 
 export function Dashboard() {
   const [reports, setReports] = useState<Report[]>([])
@@ -27,122 +21,51 @@ export function Dashboard() {
   const [stopWordFilter, setStopWordFilter] = useState<"english" | "thai" | "any">("any")
   const [isReferencesOpen, setIsReferencesOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [currentReportType, setCurrentReportType] = useState<ReportType>('daily');
 
-  // Fetch reports (now without date range filter)
+  // Callback to handle report type change from Sidebar
+  const handleReportTypeChange = (reportType: ReportType) => {
+    setCurrentReportType(reportType)
+    // Data fetching will be triggered by the useEffect below due to currentReportType dependency change
+  }
+
+  // Fetch reports based on currentReportType
   useEffect(() => {
-    async function fetchReports() {
+    async function fetchReportsData(reportType: ReportType) {
       setIsLoading(true)
-
-      if (!supabase) {
-        console.error("Supabase client not initialized")
-        // Use mock data for development/preview
-        const mockReports = [
-          {
-            id: "mock-1",
-            content:
-              "## Today's Accomplishments\n\n- **Dashboard UI Design:** Completed the main dashboard layout\n- **API Integration:** Successfully integrated the reporting module API\n- **Bug Fixes:** Fixed several critical bugs in the authentication flow\n\n## Tomorrow's Plan\n\n- Implement word cloud visualization\n- Improve filtering options\n- Start work on export functionality\n\n## Blockers\n\nNo blockers at the moment.",
-            createdAt: new Date(),
-            teamName: "Engineering",
-          },
-          {
-            id: "mock-2",
-            content:
-              "## Today's Work\n\n- **UI Components:** Finalized components for the profile page\n- **Dashboard Mockups:** Created new dashboard layout designs\n- **User Testing:** Conducted onboarding flow testing\n\n## Next Steps\n\n- Work on design system documentation\n- Create illustrations for empty states\n\n## Issues\n\n- Waiting for stakeholder feedback on color scheme",
-            createdAt: new Date(),
-            teamName: "Design",
-          },
-          {
-            id: "mock-3",
-            content:
-              "ทีมวิศวกรรม - รายงานประจำวัน\n\n## งานที่เสร็จแล้ว\n\n- **ระบบยืนยันตัวตน:** พัฒนาระบบการยืนยันตัวตนของผู้ใช้\n- **แก้ไขข้อบกพร่อง:** แก้ไขข้อบกพร่องในการแสดงผลแดชบอร์ด\n- **ปรับปรุงประสิทธิภาพ:** ปรับปรุงประสิทธิภาพการค้นหาข้อมูล\n\n## กำลังดำเนินการ\n\n- **API Integration:** ทำงานเกี่ยวกับการเชื่อมต่อ API กับบริการภายนอก\n- **Code Refactoring:** ปรับปรุงโค้ดเก่าในส่วนของ backend\n\n## ปัญหาที่พบ\n\n- รอทีมออกแบบเพื่อสรุปองค์ประกอบ UI",
-            createdAt: subDays(new Date(), 1),
-            teamName: "Engineering",
-          },
-          {
-            id: "mock-4",
-            content:
-              "## Product Updates\n\n- **Feature Planning:** Completed roadmap for Q1 features\n- **User Research:** Analyzed user feedback from last sprint\n- **Stakeholder Meeting:** Presented progress to leadership team\n\n## Upcoming Tasks\n\n- Define acceptance criteria for new features\n- Schedule user interviews\n\n## Dependencies\n\n- Need engineering estimates for new features",
-            createdAt: subDays(new Date(), 1),
-            teamName: "Product",
-          },
-        ]
-        setReports(mockReports)
-        if (!selectedReport && mockReports.length > 0) {
-          setSelectedReport(mockReports[0])
-        }
-        setIsLoading(false)
-        return
-      }
+      let fetchedReports: Report[] = []
 
       try {
-        // Fetch all reports without date filtering
-        const { data, error } = await supabase.from("standup").select("*").order("created_at", { ascending: false })
-
-        if (error) {
-          console.error("Error fetching reports:", error)
-          setIsLoading(false)
-          return
+        if (reportType === "daily") {
+          fetchedReports = await fetchDailyReports()
+        } else if (reportType === "weekly") {
+          fetchedReports = await fetchWeeklyReports()
+        } else if (reportType === "monthly") {
+          fetchedReports = await fetchMonthlyReports()
         }
+        setReports(fetchedReports)
 
-        const formattedReports = data.map((report) => ({
-          id: report.id,
-          content: report.content,
-          createdAt: new Date(report.created_at),
-          teamName: report.team_name,
-        }))
-
-        setReports(formattedReports)
-
-        // Set default selected report if none selected
-        if (
-          formattedReports.length > 0 &&
-          (!selectedReport || !formattedReports.find((r) => r.id === selectedReport.id))
-        ) {
-          setSelectedReport(formattedReports[0])
+        if (fetchedReports.length > 0) {
+          // If selectedReport is no longer in the new list or not of the current type, select the first one
+          const currentSelectedStillValid = fetchedReports.find(r => r.id === selectedReport?.id && r.reportType === reportType);
+          if (currentSelectedStillValid) {
+            setSelectedReport(currentSelectedStillValid);
+          } else {
+            setSelectedReport(fetchedReports[0]);
+          }
+        } else {
+          setSelectedReport(null) // No reports, so no selection
         }
       } catch (err) {
-        console.error("Failed to fetch reports:", err)
-        // Use mock data as fallback
-        const mockReports = [
-          {
-            id: "mock-1",
-            content:
-              "## Today's Accomplishments\n\n- **Dashboard UI Design:** Completed the main dashboard layout\n- **API Integration:** Successfully integrated the reporting module API\n- **Bug Fixes:** Fixed several critical bugs in the authentication flow\n\n## Tomorrow's Plan\n\n- Implement word cloud visualization\n- Improve filtering options\n- Start work on export functionality\n\n## Blockers\n\nNo blockers at the moment.",
-            createdAt: new Date(),
-            teamName: "Engineering",
-          },
-          {
-            id: "mock-2",
-            content:
-              "## Today's Work\n\n- **UI Components:** Finalized components for the profile page\n- **Dashboard Mockups:** Created new dashboard layout designs\n- **User Testing:** Conducted onboarding flow testing\n\n## Next Steps\n\n- Work on design system documentation\n- Create illustrations for empty states\n\n## Issues\n\n- Waiting for stakeholder feedback on color scheme",
-            createdAt: new Date(),
-            teamName: "Design",
-          },
-          {
-            id: "mock-3",
-            content:
-              "ทีมวิศวกรรม - รายงานประจำวัน\n\n## งานที่เสร็จแล้ว\n\n- **ระบบยืนยันตัวตน:** พัฒนาระบบการยืนยันตัวตนของผู้ใช้\n- **แก้ไขข้อบกพร่อง:** แก้ไขข้อบกพร่องในการแสดงผลแดชบอร์ด\n- **ปรับปรุงประสิทธิภาพ:** ปรับปรุงประสิทธิภาพการค้นหาข้อมูล\n\n## กำลังดำเนินการ\n\n- **API Integration:** ทำงานเกี่ยวกับการเชื่อมต่อ API กับบริการภายนอก\n- **Code Refactoring:** ปรับปรุงโค้ดเก่าในส่วนของ backend\n\n## ปัญหาที่พบ\n\n- รอทีมออกแบบเพื่อสรุปองค์ประกอบ UI",
-            createdAt: subDays(new Date(), 1),
-            teamName: "Engineering",
-          },
-          {
-            id: "mock-4",
-            content:
-              "## Product Updates\n\n- **Feature Planning:** Completed roadmap for Q1 features\n- **User Research:** Analyzed user feedback from last sprint\n- **Stakeholder Meeting:** Presented progress to leadership team\n\n## Upcoming Tasks\n\n- Define acceptance criteria for new features\n- Schedule user interviews\n\n## Dependencies\n\n- Need engineering estimates for new features",
-            createdAt: subDays(new Date(), 1),
-            teamName: "Product",
-          },
-        ]
-        setReports(mockReports)
-        if (!selectedReport && mockReports.length > 0) {
-          setSelectedReport(mockReports[0])
-        }
+        console.error(`Error fetching ${reportType} reports:`, err)
+        setReports([])
+        setSelectedReport(null)
       }
       setIsLoading(false)
     }
 
-    fetchReports()
-  }, [])
+    fetchReportsData(currentReportType)
+  }, [currentReportType]) // Re-run effect when currentReportType changes
 
   // Handle report selection
   const handleReportSelect = (report: Report) => {
@@ -174,7 +97,13 @@ export function Dashboard() {
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar reports={reports} selectedReport={selectedReport} onReportSelect={handleReportSelect} />
+      <Sidebar
+        reports={reports}
+        selectedReport={selectedReport}
+        onReportSelect={handleReportSelect}
+        currentReportType={currentReportType}
+        onReportTypeChange={handleReportTypeChange}
+      />
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row gap-2 sm:gap-4 items-start sm:items-center">
           <h2 className="scroll-m-20 text-xl md:text-3xl font-semibold tracking-tight first:mt-0 px-2 md:px-2 truncate flex-1 min-w-0">
@@ -182,12 +111,13 @@ export function Dashboard() {
               ? selectedReport.createdAt.toLocaleDateString('en-US', { day: '2-digit', month: 'long', timeZone: 'UTC' })
               : ""}: {selectedReport?.teamName
               ? selectedReport.teamName.charAt(0).toUpperCase() + selectedReport.teamName.slice(1)
-              : "Untitled"}
+              : currentReportType.charAt(0).toUpperCase() + currentReportType.slice(1) + " Overview"} 
+              {/* Fallback title based on report type if no report is selected */}
           </h2>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-start sm:items-center w-full sm:w-auto">
             <StopWordFilter value={stopWordFilter} onChange={setStopWordFilter} />
             <div className="flex flex-row gap-2 items-center">
-              <NavigationButtons
+              <NavigationButtons // TODO: Consider disabling nav buttons if selectedReport is a summary
                 onPrevious={handlePrevious}
                 onNext={handleNext}
                 hasPrevious={reports.findIndex((r) => r.id === selectedReport?.id) < reports.length - 1}
@@ -199,10 +129,10 @@ export function Dashboard() {
         <div className="flex-1 p-3 md:p-6 overflow-auto">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">Loading reports...</p>
+              <p className="text-muted-foreground">Loading {currentReportType} reports...</p>
             </div>
           ) : selectedReport ? (
-            <Tabs defaultValue="wordcloud" className="h-full flex flex-col">
+            <Tabs defaultValue="wordcloud" className="h-full flex flex-col" key={selectedReport.id}> {/* Add key to Tabs to force re-render */}
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="wordcloud" className="text-xs md:text-sm">
                   Wordcloud
@@ -220,7 +150,9 @@ export function Dashboard() {
             </Tabs>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground text-center px-4">Select a report from the sidebar to view</p>
+              <p className="text-muted-foreground text-center px-4">
+                No {currentReportType} reports available for the selected period.
+              </p>
             </div>
           )}
         </div>

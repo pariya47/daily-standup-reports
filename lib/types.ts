@@ -3,7 +3,10 @@ export interface Report {
   content: string
   createdAt: Date
   teamName: string
+  reportType?: ReportType
 }
+
+export type ReportType = 'daily' | 'weekly' | 'monthly';
 
 export interface WordCloudItem {
   text: string
