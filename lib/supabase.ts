@@ -67,7 +67,37 @@ export async function fetchDailyReports(): Promise<Report[]> {
     return mockReports(mockTeams, 'daily')
   }
 
-  return data.map((report) => ({ ...report, reportType: 'daily' })) || []
+  return data.map((dbReport: any) => {
+    let createdAtDate = null;
+    if (dbReport.created_at) {
+      try {
+        const parsedDate = new Date(dbReport.created_at);
+        if (!isNaN(parsedDate.getTime())) {
+          createdAtDate = parsedDate;
+        } else {
+          console.warn(`Invalid date string received for daily report ID ${dbReport.id} from standup table: ${dbReport.created_at}`);
+        }
+      } catch (e) {
+        console.warn(`Error parsing date for daily report ID ${dbReport.id} from standup table: ${dbReport.created_at}`, e);
+      }
+    }
+
+    let teamNameValue = "Unknown Team";
+    if (dbReport.teamName) teamNameValue = String(dbReport.teamName);
+    else if (dbReport.team_name) teamNameValue = String(dbReport.team_name);
+
+    return {
+      ...dbReport,
+      id: String(dbReport.id),
+      content: typeof dbReport.content === 'string' ? dbReport.content : "",
+      teamName: teamNameValue,
+      progress: Array.isArray(dbReport.progress) ? dbReport.progress.map(String) : [],
+      blockers: Array.isArray(dbReport.blockers) ? dbReport.blockers.map(String) : [],
+      nextSteps: Array.isArray(dbReport.next_steps) ? dbReport.next_steps.map(String) : [],
+      createdAt: createdAtDate,
+      reportType: 'daily'
+    };
+  }) || [];
 }
 
 export async function fetchWeeklyReports(): Promise<Report[]> {
@@ -88,7 +118,37 @@ export async function fetchWeeklyReports(): Promise<Report[]> {
     return mockReports(mockTeams, 'weekly')
   }
 
-  return data.map((report) => ({ ...report, reportType: 'weekly' })) || []
+  return data.map((dbReport: any) => {
+    let createdAtDate = null;
+    if (dbReport.created_at) {
+      try {
+        const parsedDate = new Date(dbReport.created_at);
+        if (!isNaN(parsedDate.getTime())) {
+          createdAtDate = parsedDate;
+        } else {
+          console.warn(`Invalid date string received for weekly report ID ${dbReport.id} from weekly_reports table: ${dbReport.created_at}`);
+        }
+      } catch (e) {
+        console.warn(`Error parsing date for weekly report ID ${dbReport.id} from weekly_reports table: ${dbReport.created_at}`, e);
+      }
+    }
+
+    let teamNameValue = "Unknown Team";
+    if (dbReport.teamName) teamNameValue = String(dbReport.teamName);
+    else if (dbReport.team_name) teamNameValue = String(dbReport.team_name);
+
+    return {
+      ...dbReport,
+      id: String(dbReport.id),
+      content: typeof dbReport.content === 'string' ? dbReport.content : "",
+      teamName: teamNameValue,
+      progress: Array.isArray(dbReport.progress) ? dbReport.progress.map(String) : [],
+      blockers: Array.isArray(dbReport.blockers) ? dbReport.blockers.map(String) : [],
+      nextSteps: Array.isArray(dbReport.next_steps) ? dbReport.next_steps.map(String) : [],
+      createdAt: createdAtDate,
+      reportType: 'weekly'
+    };
+  }) || [];
 }
 
 export async function fetchMonthlyReports(): Promise<Report[]> {
@@ -109,5 +169,35 @@ export async function fetchMonthlyReports(): Promise<Report[]> {
     return mockReports(mockTeams, 'monthly')
   }
 
-  return data.map((report) => ({ ...report, reportType: 'monthly' })) || []
+  return data.map((dbReport: any) => {
+    let createdAtDate = null;
+    if (dbReport.created_at) {
+      try {
+        const parsedDate = new Date(dbReport.created_at);
+        if (!isNaN(parsedDate.getTime())) {
+          createdAtDate = parsedDate;
+        } else {
+          console.warn(`Invalid date string received for monthly report ID ${dbReport.id} from monthly_reports table: ${dbReport.created_at}`);
+        }
+      } catch (e) {
+        console.warn(`Error parsing date for monthly report ID ${dbReport.id} from monthly_reports table: ${dbReport.created_at}`, e);
+      }
+    }
+
+    let teamNameValue = "Unknown Team";
+    if (dbReport.teamName) teamNameValue = String(dbReport.teamName);
+    else if (dbReport.team_name) teamNameValue = String(dbReport.team_name);
+
+    return {
+      ...dbReport,
+      id: String(dbReport.id),
+      content: typeof dbReport.content === 'string' ? dbReport.content : "",
+      teamName: teamNameValue,
+      progress: Array.isArray(dbReport.progress) ? dbReport.progress.map(String) : [],
+      blockers: Array.isArray(dbReport.blockers) ? dbReport.blockers.map(String) : [],
+      nextSteps: Array.isArray(dbReport.next_steps) ? dbReport.next_steps.map(String) : [],
+      createdAt: createdAtDate,
+      reportType: 'monthly'
+    };
+  }) || [];
 }

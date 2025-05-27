@@ -31,57 +31,83 @@ const getWeekId = (date: Date) => `${getYear(date)}-${format(date, "II")}` // IS
 
 // Grouping functions
 const groupReportsByDate = (reports: Report[]): GroupedReports[] => {
-  const groups: Record<string, Report[]> = {}
-  reports.forEach((report) => {
-    const dateStr = format(report.createdAt, "yyyy-MM-dd")
-    if (!groups[dateStr]) groups[dateStr] = []
-    groups[dateStr].push(report)
-  })
+  const validReports = reports.filter(report => {
+    const isValid = report.createdAt instanceof Date && !isNaN(report.createdAt.getTime());
+    if (!isValid) {
+      console.warn(`Sidebar (groupReportsByDate): Filtering out report ID ${report.id} due to invalid createdAt:`, report.createdAt);
+    }
+    return isValid;
+  });
+
+  const groups: Record<string, Report[]> = {};
+  validReports.forEach((report) => {
+    const dateStr = format(report.createdAt!, "yyyy-MM-dd");
+    if (!groups[dateStr]) groups[dateStr] = [];
+    groups[dateStr].push(report);
+  });
   return Object.entries(groups)
     .map(([date, reps]) => ({
       period: date,
       reports: reps,
       periodTitle: format(new Date(date), "MMM d, yyyy"),
     }))
-    .sort((a, b) => new Date(b.period).getTime() - new Date(a.period).getTime())
-}
+    .sort((a, b) => new Date(b.period).getTime() - new Date(a.period).getTime());
+};
 
 const groupReportsByWeek = (reports: Report[]): GroupedReports[] => {
-  const groups: Record<string, Report[]> = {}
-  reports.forEach((report) => {
-    const weekId = getWeekId(report.createdAt)
-    if (!groups[weekId]) groups[weekId] = []
-    groups[weekId].push(report)
-  })
+  const validReports = reports.filter(report => {
+    const isValid = report.createdAt instanceof Date && !isNaN(report.createdAt.getTime());
+    if (!isValid) {
+      console.warn(`Sidebar (groupReportsByWeek): Filtering out report ID ${report.id} due to invalid createdAt:`, report.createdAt);
+    }
+    return isValid;
+  });
+
+  const groups: Record<string, Report[]> = {};
+  validReports.forEach((report) => {
+    const weekId = getWeekId(report.createdAt!);
+    if (!groups[weekId]) groups[weekId] = [];
+    groups[weekId].push(report);
+  });
   return Object.entries(groups)
     .map(([weekId, reps]) => {
-      const firstReportDate = reps[0].createdAt
-      const weekStart = startOfWeek(firstReportDate, { weekStartsOn: 1 }) // Assuming week starts on Monday
-      const weekEnd = endOfWeek(firstReportDate, { weekStartsOn: 1 })
+      // reps[0] is guaranteed to exist and have a valid createdAt if groups[weekId] was populated
+      const firstReportDate = reps[0].createdAt!;
+      const weekStart = startOfWeek(firstReportDate, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(firstReportDate, { weekStartsOn: 1 });
       return {
         period: weekId,
         reports: reps,
         periodTitle: `Week of ${format(weekStart, "MMM d")} - ${format(weekEnd, "MMM d, yyyy")}`,
-      }
+      };
     })
-    .sort((a, b) => b.period.localeCompare(a.period)) // Sort by YYYY-WW string
-}
+    .sort((a, b) => b.period.localeCompare(a.period));
+};
 
 const groupReportsByMonth = (reports: Report[]): GroupedReports[] => {
-  const groups: Record<string, Report[]> = {}
-  reports.forEach((report) => {
-    const monthId = format(report.createdAt, "yyyy-MM")
-    if (!groups[monthId]) groups[monthId] = []
-    groups[monthId].push(report)
-  })
+  const validReports = reports.filter(report => {
+    const isValid = report.createdAt instanceof Date && !isNaN(report.createdAt.getTime());
+    if (!isValid) {
+      console.warn(`Sidebar (groupReportsByMonth): Filtering out report ID ${report.id} due to invalid createdAt:`, report.createdAt);
+    }
+    return isValid;
+  });
+
+  const groups: Record<string, Report[]> = {};
+  validReports.forEach((report) => {
+    const monthId = format(report.createdAt!, "yyyy-MM");
+    if (!groups[monthId]) groups[monthId] = [];
+    groups[monthId].push(report);
+  });
   return Object.entries(groups)
     .map(([monthId, reps]) => ({
       period: monthId,
       reports: reps,
-      periodTitle: format(reps[0].createdAt, "MMMM yyyy"),
+      // reps[0] is guaranteed to exist and have a valid createdAt if groups[monthId] was populated
+      periodTitle: format(reps[0].createdAt!, "MMMM yyyy"),
     }))
-    .sort((a, b) => b.period.localeCompare(a.period)) // Sort by YYYY-MM string
-}
+    .sort((a, b) => b.period.localeCompare(a.period));
+};
 
 // Function to create a summary report from multiple reports
 function createPeriodSummary(reports: Report[], periodIdentifier: string, reportType: ReportType, periodTitle: string): Report {
