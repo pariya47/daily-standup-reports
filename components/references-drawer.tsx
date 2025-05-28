@@ -1,3 +1,4 @@
+import { useMemo } from "react"; // Added useMemo import
 import type { Report } from "@/lib/types"
 import { findSentencesWithWord } from "@/lib/text-processor"
 import {
@@ -19,8 +20,31 @@ interface ReferencesDrawerProps {
   report: Report | null
 }
 
+const stripMarkdown = (text: string | null | undefined): string => {
+  if (!text) return "";
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1') // Replace **bold** with content
+    .replace(/\*(.*?)\*/g, '$1')   // Replace *italic* with content
+    .replace(/---/g, '')          // Remove --- rule lines
+    .trim();
+};
+
 export function ReferencesDrawer({ isOpen, onClose, word, report }: ReferencesDrawerProps) {
-  const sentences = word && report ? findSentencesWithWord(report.content, word) : []
+  const searchableText = useMemo(() => {
+    if (!report) return "";
+    const sources = [
+      report.progress,
+      report.blockers,
+      report.nextSteps
+    ];
+    // Join with newlines to preserve some separation for sentence finding,
+    // but markdown stripping will clean it up further.
+    return sources.map(s => s || "").join("\n\n"); 
+  }, [report]);
+
+  const cleanedSearchableText = useMemo(() => stripMarkdown(searchableText), [searchableText]);
+
+  const sentences = word && report ? findSentencesWithWord(cleanedSearchableText, word) : []
 
   // Function to highlight word variations in text
   const highlightWord = (sentence: string, word: string) => {

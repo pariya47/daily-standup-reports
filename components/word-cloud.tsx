@@ -5,6 +5,15 @@ import { processText } from "@/lib/text-processor"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Report } from "@/lib/types"
 
+const stripMarkdown = (text: string | null | undefined): string => {
+  if (!text) return "";
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1') 
+    .replace(/\*(.*?)\*/g, '$1')   
+    .replace(/---/g, '')          
+    .trim();
+};
+
 interface WordCloudProps {
   report: Report
   stopWordFilter: "english" | "thai" | "any"
@@ -18,38 +27,66 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
 
   // Process text to generate word cloud data
   useEffect(() => {
+    console.log("[WordCloud Debug] Report received:", report);
+    if (report) {
+      console.log("[WordCloud Debug] report.progress:", report.progress);
+      console.log("[WordCloud Debug] report.blockers:", report.blockers);
+      console.log("[WordCloud Debug] report.nextSteps:", report.nextSteps);
+    }
+
     if (!report) {
-      setWords([{ text: "No report selected", value: 1 }]);
+      const noReportWords = [{ text: "No report selected", value: 1 }];
+      console.log("[WordCloud Debug] Final words state to be set:", noReportWords);
+      console.log("[WordCloud Debug] Setting loading to false.");
+      setWords(noReportWords);
       setLoading(false);
       return;
     }
 
-    // Concatenate progress, blockers, and nextSteps strings
+    const cleanedProgress = stripMarkdown(report.progress);
+    const cleanedBlockers = stripMarkdown(report.blockers);
+    const cleanedNextSteps = stripMarkdown(report.nextSteps);
+
     const textSources = [
-      report.progress || "",
-      report.blockers || "",
-      report.nextSteps || ""
+      cleanedProgress,
+      cleanedBlockers,
+      cleanedNextSteps
     ];
-    const combinedText = textSources.join(" ").replace(/\s+/g, ' ').trim();
+    const nonEmptySources = textSources.filter(s => s && s.trim() !== "");
+    const combinedText = nonEmptySources.join(" ").replace(/\s+/g, ' ').trim();
+    console.log("[WordCloud Debug] combinedText for processText:", combinedText);
 
     if (!combinedText) {
-      setWords([{ text: "No significant words to display", value: 1 }]);
+      const noCombinedTextWords = [{ text: "No significant words to display", value: 1 }];
+      console.log("[WordCloud Debug] Final words state to be set:", noCombinedTextWords);
+      console.log("[WordCloud Debug] Setting loading to false.");
+      setWords(noCombinedTextWords);
       setLoading(false);
       return;
     }
 
     setLoading(true);
+    let wordsVariable: Array<{ text: string; value: number }>;
     try {
       const processedWords = processText(combinedText, stopWordFilter);
+      console.log("[WordCloud Debug] processedWords from processText:", processedWords);
       if (processedWords.length === 0) {
-        setWords([{ text: "No significant words found", value: 1 }]);
+        wordsVariable = [{ text: "No significant words found", value: 1 }];
       } else {
-        setWords(processedWords);
+        wordsVariable = processedWords;
       }
     } catch (error) {
-      console.error("Error processing text for word cloud:", error);
-      setWords([{ text: "Error processing text", value: 1 }]);
+      console.error("[WordCloud Debug] Error processing text in WordCloud:", error);
+      wordsVariable = [{ text: "Error processing text", value: 1 }];
+      console.log("[WordCloud Debug] Final words state to be set:", wordsVariable);
+      console.log("[WordCloud Debug] Setting loading to false.");
+      setWords(wordsVariable);
+      setLoading(false);
+      return; // Explicitly return after handling error
     }
+    console.log("[WordCloud Debug] Final words state to be set:", wordsVariable);
+    console.log("[WordCloud Debug] Setting loading to false.");
+    setWords(wordsVariable);
     setLoading(false);
   }, [report?.id, report?.progress, report?.blockers, report?.nextSteps, stopWordFilter]);
 
@@ -85,13 +122,17 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
       return;
     }
 
-    // Concatenate progress, blockers, and nextSteps strings
+    const cleanedProgress = stripMarkdown(report.progress);
+    const cleanedBlockers = stripMarkdown(report.blockers);
+    const cleanedNextSteps = stripMarkdown(report.nextSteps);
+
     const textSources = [
-      report.progress || "",
-      report.blockers || "",
-      report.nextSteps || ""
+      cleanedProgress,
+      cleanedBlockers,
+      cleanedNextSteps
     ];
-    const combinedText = textSources.join(" ").replace(/\s+/g, ' ').trim();
+    const nonEmptySources = textSources.filter(s => s && s.trim() !== "");
+    const combinedText = nonEmptySources.join(" ").replace(/\s+/g, ' ').trim();
     
     if (!combinedText) {
       setOriginalWords({});
