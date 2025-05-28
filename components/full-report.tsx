@@ -12,12 +12,74 @@ interface FullReportProps {
   report: Report | null;
 }
 
-const processMultilineText = (text: string | null | undefined): string[] => {
-  if (!text || text.trim() === "") {
-    return [];
+// Helper function to parse inline formatting (bold, italic, etc.)
+// parseInlineFormatting remains the same as it's used by renderMarkdownLike
+
+// New renderMarkdownLike function
+function renderMarkdownLike(content: string | null | undefined): JSX.Element | null {
+  if (!content || content.trim() === "") {
+    return null; 
   }
-  return text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-};
+
+  const lines = content.split('\n');
+  const elements: JSX.Element[] = [];
+  let currentListType: 'ul' | 'ol' | null = null;
+  let listItems: JSX.Element[] = [];
+  let keyCounter = 0; // For unique keys
+
+  const flushList = () => {
+    if (listItems.length > 0 && currentListType) {
+      if (currentListType === 'ul') {
+        elements.push(<ul key={`list-${keyCounter++}`} className="list-disc pl-5 space-y-1 mb-2">{listItems}</ul>);
+      } else if (currentListType === 'ol') {
+        elements.push(<ol key={`list-${keyCounter++}`} className="list-decimal pl-5 space-y-1 mb-2">{listItems}</ol>);
+      }
+      listItems = [];
+    }
+    currentListType = null;
+  };
+
+  lines.forEach((line) => {
+    const trimmedLine = line.trim(); // Trim line first for accurate pattern matching
+
+    if (trimmedLine.startsWith("# ")) {
+      flushList();
+      elements.push(<h1 key={`h1-${keyCounter++}`} className="text-xl font-bold mb-2 mt-3">{parseInlineFormatting(trimmedLine.substring(2))}</h1>);
+    } else if (trimmedLine.startsWith("## ")) {
+      flushList();
+      elements.push(<h2 key={`h2-${keyCounter++}`} className="text-lg font-semibold mb-2 mt-2">{parseInlineFormatting(trimmedLine.substring(3))}</h2>);
+    } else if (trimmedLine.startsWith("### ")) {
+      flushList();
+      elements.push(<h3 key={`h3-${keyCounter++}`} className="text-base font-medium mb-1 mt-1">{parseInlineFormatting(trimmedLine.substring(4))}</h3>);
+    } else if (trimmedLine.startsWith("- ") || trimmedLine.startsWith("* ")) {
+      if (currentListType !== 'ul') {
+        flushList();
+        currentListType = 'ul';
+      }
+      listItems.push(<li key={`item-${keyCounter++}`}>{parseInlineFormatting(trimmedLine.substring(2))}</li>);
+    } else if (/^\d+\.\s/.test(trimmedLine)) {
+       if (currentListType !== 'ol') {
+         flushList();
+         currentListType = 'ol';
+       }
+       listItems.push(<li key={`item-${keyCounter++}`}>{parseInlineFormatting(trimmedLine.replace(/^\d+\.\s/, ''))}</li>);
+    } else {
+      flushList();
+      if (trimmedLine.length > 0) {
+        elements.push(<p key={`para-${keyCounter++}`} className="mb-2 leading-relaxed">{parseInlineFormatting(trimmedLine)}</p>);
+      } else if (lines.length > 1 && elements.length > 0 && !(elements[elements.length - 1].type === 'div' && elements[elements.length - 1].props.className === 'h-2')) {
+        // Add a smaller break for empty lines between content, but not multiple consecutive breaks.
+        elements.push(<div key={`break-${keyCounter++}`} className="h-2" />);
+      }
+    }
+  });
+
+  flushList(); 
+
+  if (elements.length === 0) return null;
+  // Note: prose-sm sets font size, dark:prose-invert handles dark mode. max-w-none removes max width constraint.
+  return <div className="prose prose-sm dark:prose-invert max-w-none">{elements}</div>;
+}
 
 // Helper function to parse inline formatting (bold, italic, etc.)
 function parseInlineFormatting(text: string): (string | JSX.Element)[] {
@@ -78,52 +140,22 @@ export function FullReport({ report }: FullReportProps) {
 
           <TabsContent value="progress" className="mt-4 p-3 rounded-lg border bg-green-50 dark:bg-green-900/20 border-green-500/30">
             {(() => {
-              const progressItems = processMultilineText(report.progress);
-              return progressItems.length > 0 ? (
-                <ul className="space-y-1 list-disc pl-4">
-                  {progressItems.map((item, index) => (
-                    <li key={`prog-${index}`} className="text-sm text-gray-800 dark:text-gray-200">
-                      {parseInlineFormatting(item)}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-600 dark:text-gray-400 italic">No progress items reported.</p>
-              );
+              const progressRendered = renderMarkdownLike(report.progress);
+              return progressRendered ? progressRendered : <p className="text-sm text-gray-600 dark:text-gray-400 italic">No progress items reported.</p>;
             })()}
           </TabsContent>
 
           <TabsContent value="blockers" className="mt-4 p-3 rounded-lg border bg-red-50 dark:bg-red-900/20 border-red-500/30">
             {(() => {
-              const blockersItems = processMultilineText(report.blockers);
-              return blockersItems.length > 0 ? (
-                <ul className="space-y-1 list-disc pl-4">
-                  {blockersItems.map((item, index) => (
-                    <li key={`block-${index}`} className="text-sm text-gray-800 dark:text-gray-200">
-                      {parseInlineFormatting(item)}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-600 dark:text-gray-400 italic">No blockers reported.</p>
-              );
+              const blockersRendered = renderMarkdownLike(report.blockers);
+              return blockersRendered ? blockersRendered : <p className="text-sm text-gray-600 dark:text-gray-400 italic">No blockers reported.</p>;
             })()}
           </TabsContent>
 
           <TabsContent value="nextSteps" className="mt-4 p-3 rounded-lg border bg-blue-50 dark:bg-blue-900/20 border-blue-500/30">
             {(() => {
-              const nextStepsItems = processMultilineText(report.nextSteps);
-              return nextStepsItems.length > 0 ? (
-                <ul className="space-y-1 list-disc pl-4">
-                  {nextStepsItems.map((item, index) => (
-                    <li key={`next-${index}`} className="text-sm text-gray-800 dark:text-gray-200">
-                      {parseInlineFormatting(item)}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-600 dark:text-gray-400 italic">No next steps defined.</p>
-              );
+              const nextStepsRendered = renderMarkdownLike(report.nextSteps);
+              return nextStepsRendered ? nextStepsRendered : <p className="text-sm text-gray-600 dark:text-gray-400 italic">No next steps defined.</p>;
             })()}
           </TabsContent>
         </Tabs>
@@ -136,18 +168,8 @@ export function FullReport({ report }: FullReportProps) {
           <div className="flex-1 p-3 rounded-lg border bg-green-100 dark:bg-green-900/30 border-green-500/50">
             <h3 className="text-lg font-semibold mb-3 text-green-700 dark:text-green-300">Progress</h3>
             {(() => {
-              const progressItems = processMultilineText(report.progress);
-              return progressItems.length > 0 ? (
-                <ul className="space-y-1 list-disc pl-5">
-                  {progressItems.map((item, index) => (
-                    <li key={`prog-${index}`} className="text-sm text-gray-800 dark:text-gray-200">
-                      {parseInlineFormatting(item)}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-600 dark:text-gray-400 italic">No progress items reported.</p>
-              );
+              const progressRendered = renderMarkdownLike(report.progress);
+              return progressRendered ? progressRendered : <p className="text-sm text-gray-600 dark:text-gray-400 italic">No progress items reported.</p>;
             })()}
           </div>
 
@@ -155,18 +177,8 @@ export function FullReport({ report }: FullReportProps) {
           <div className="flex-1 p-3 rounded-lg border bg-red-100 dark:bg-red-900/30 border-red-500/50">
             <h3 className="text-lg font-semibold mb-3 text-red-700 dark:text-red-300">Blockers</h3>
             {(() => {
-              const blockersItems = processMultilineText(report.blockers);
-              return blockersItems.length > 0 ? (
-                <ul className="space-y-1 list-disc pl-5">
-                  {blockersItems.map((item, index) => (
-                    <li key={`block-${index}`} className="text-sm text-gray-800 dark:text-gray-200">
-                      {parseInlineFormatting(item)}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-600 dark:text-gray-400 italic">No blockers reported.</p>
-              );
+              const blockersRendered = renderMarkdownLike(report.blockers);
+              return blockersRendered ? blockersRendered : <p className="text-sm text-gray-600 dark:text-gray-400 italic">No blockers reported.</p>;
             })()}
           </div>
 
@@ -174,18 +186,8 @@ export function FullReport({ report }: FullReportProps) {
           <div className="flex-1 p-3 rounded-lg border bg-blue-100 dark:bg-blue-900/30 border-blue-500/50">
             <h3 className="text-lg font-semibold mb-3 text-blue-700 dark:text-blue-300">Next Steps</h3>
             {(() => {
-              const nextStepsItems = processMultilineText(report.nextSteps);
-              return nextStepsItems.length > 0 ? (
-                <ul className="space-y-1 list-disc pl-5">
-                  {nextStepsItems.map((item, index) => (
-                    <li key={`next-${index}`} className="text-sm text-gray-800 dark:text-gray-200">
-                      {parseInlineFormatting(item)}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-600 dark:text-gray-400 italic">No next steps defined.</p>
-              );
+              const nextStepsRendered = renderMarkdownLike(report.nextSteps);
+              return nextStepsRendered ? nextStepsRendered : <p className="text-sm text-gray-600 dark:text-gray-400 italic">No next steps defined.</p>;
             })()}
           </div>
         </div>
