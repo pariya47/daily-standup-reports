@@ -1,9 +1,10 @@
 import type React from "react"
 import "@/app/globals.css"
-import { Inter } from "next/font/google"
+import { Inter, Prompt } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 
 const inter = Inter({ subsets: ["latin"] })
+const prompt = Prompt({ subsets: ["thai", "latin"], weight: ["400", "500", "700"] })
 
 export const metadata = {
   title: "Standup Report Visualizer",
@@ -18,7 +19,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={prompt.className}>
+        {/* defaultTheme="dark" */}
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {children}
         </ThemeProvider>
