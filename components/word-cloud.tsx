@@ -24,17 +24,13 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
       return;
     }
 
-    let combinedText = "";
-    if (report.progress && Array.isArray(report.progress)) {
-      combinedText += report.progress.join(" ") + " ";
-    }
-    if (report.blockers && Array.isArray(report.blockers)) {
-      combinedText += report.blockers.join(" ") + " ";
-    }
-    if (report.nextSteps && Array.isArray(report.nextSteps)) {
-      combinedText += report.nextSteps.join(" ") + " ";
-    }
-    combinedText = combinedText.trim();
+    // Concatenate progress, blockers, and nextSteps strings
+    const textSources = [
+      report.progress || "",
+      report.blockers || "",
+      report.nextSteps || ""
+    ];
+    const combinedText = textSources.join(" ").replace(/\s+/g, ' ').trim();
 
     if (!combinedText) {
       setWords([{ text: "No significant words to display", value: 1 }]);
@@ -89,32 +85,28 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
       return;
     }
 
-    let combinedText = "";
-    if (report.progress && Array.isArray(report.progress)) {
-      combinedText += report.progress.join(" ") + " ";
-    }
-    if (report.blockers && Array.isArray(report.blockers)) {
-      combinedText += report.blockers.join(" ") + " ";
-    }
-    if (report.nextSteps && Array.isArray(report.nextSteps)) {
-      combinedText += report.nextSteps.join(" ") + " ";
-    }
-    combinedText = combinedText.trim();
-
+    // Concatenate progress, blockers, and nextSteps strings
+    const textSources = [
+      report.progress || "",
+      report.blockers || "",
+      report.nextSteps || ""
+    ];
+    const combinedText = textSources.join(" ").replace(/\s+/g, ' ').trim();
+    
     if (!combinedText) {
       setOriginalWords({});
       return;
     }
 
     const wordMap: Record<string, string> = {};
-    const wordRegex = /[\w\u0E00-\u0E7F]+-?[\w\u0E00-\u0E7F]+|[\w\u0E00-\u0E7F]+/g;
+    const wordRegex = /[\w\u0E00-\u0E7F]+-?[\w\u0E00-\u0E7F]+|[\w\u0E00-\u0E7F]+/g; // Keep the existing regex
     const matches = combinedText.match(wordRegex) || [];
 
     matches.forEach((word) => {
       const normalized = word.toLowerCase();
       const withoutSpecialChars = normalized.replace(/[^a-z0-9\u0E00-\u0E7F]/g, "");
       wordMap[normalized] = word;
-      if (withoutSpecialChars !== normalized) { // Avoid overwriting if identical
+      if (withoutSpecialChars !== normalized) { 
          wordMap[withoutSpecialChars] = word;
       }
     });

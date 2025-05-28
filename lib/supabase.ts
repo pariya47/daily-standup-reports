@@ -91,9 +91,9 @@ export async function fetchDailyReports(): Promise<Report[]> {
       id: String(dbReport.id),
       content: typeof dbReport.content === 'string' ? dbReport.content : "",
       teamName: teamNameValue,
-      progress: Array.isArray(dbReport.progress) ? dbReport.progress.map(String) : [],
-      blockers: Array.isArray(dbReport.blockers) ? dbReport.blockers.map(String) : [],
-      nextSteps: Array.isArray(dbReport.next_steps) ? dbReport.next_steps.map(String) : [],
+      progress: typeof dbReport.progress === 'string' ? dbReport.progress : (dbReport.progress == null ? null : (console.warn(`Report ID ${dbReport.id}: Unexpected type for progress: ${typeof dbReport.progress}`), null)),
+      blockers: typeof dbReport.blockers === 'string' ? dbReport.blockers : (dbReport.blockers == null ? null : (console.warn(`Report ID ${dbReport.id}: Unexpected type for blockers: ${typeof dbReport.blockers}`), null)),
+      nextSteps: typeof dbReport.next_steps === 'string' ? dbReport.next_steps : (dbReport.next_steps == null ? null : (console.warn(`Report ID ${dbReport.id}: Unexpected type for next_steps: ${typeof dbReport.next_steps}`), null)),
       createdAt: createdAtDate,
       reportType: 'daily'
     };
@@ -142,9 +142,9 @@ export async function fetchWeeklyReports(): Promise<Report[]> {
       id: String(dbReport.id),
       content: typeof dbReport.content === 'string' ? dbReport.content : "",
       teamName: teamNameValue,
-      progress: Array.isArray(dbReport.progress) ? dbReport.progress.map(String) : [],
-      blockers: Array.isArray(dbReport.blockers) ? dbReport.blockers.map(String) : [],
-      nextSteps: Array.isArray(dbReport.next_steps) ? dbReport.next_steps.map(String) : [],
+      progress: typeof dbReport.progress === 'string' ? dbReport.progress : (dbReport.progress == null ? null : (console.warn(`Report ID ${dbReport.id}: Unexpected type for progress: ${typeof dbReport.progress}`), null)),
+      blockers: typeof dbReport.blockers === 'string' ? dbReport.blockers : (dbReport.blockers == null ? null : (console.warn(`Report ID ${dbReport.id}: Unexpected type for blockers: ${typeof dbReport.blockers}`), null)),
+      nextSteps: typeof dbReport.next_steps === 'string' ? dbReport.next_steps : (dbReport.next_steps == null ? null : (console.warn(`Report ID ${dbReport.id}: Unexpected type for next_steps: ${typeof dbReport.next_steps}`), null)),
       createdAt: createdAtDate,
       reportType: 'weekly'
     };
@@ -193,9 +193,9 @@ export async function fetchMonthlyReports(): Promise<Report[]> {
       id: String(dbReport.id),
       content: typeof dbReport.content === 'string' ? dbReport.content : "",
       teamName: teamNameValue,
-      progress: Array.isArray(dbReport.progress) ? dbReport.progress.map(String) : [],
-      blockers: Array.isArray(dbReport.blockers) ? dbReport.blockers.map(String) : [],
-      nextSteps: Array.isArray(dbReport.next_steps) ? dbReport.next_steps.map(String) : [],
+      progress: typeof dbReport.progress === 'string' ? dbReport.progress : (dbReport.progress == null ? null : (console.warn(`Report ID ${dbReport.id}: Unexpected type for progress: ${typeof dbReport.progress}`), null)),
+      blockers: typeof dbReport.blockers === 'string' ? dbReport.blockers : (dbReport.blockers == null ? null : (console.warn(`Report ID ${dbReport.id}: Unexpected type for blockers: ${typeof dbReport.blockers}`), null)),
+      nextSteps: typeof dbReport.next_steps === 'string' ? dbReport.next_steps : (dbReport.next_steps == null ? null : (console.warn(`Report ID ${dbReport.id}: Unexpected type for next_steps: ${typeof dbReport.next_steps}`), null)),
       createdAt: createdAtDate,
       reportType: 'monthly'
     };
