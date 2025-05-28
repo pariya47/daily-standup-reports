@@ -258,22 +258,22 @@ function SidebarContent({ reports, selectedReport, onReportSelect, onReportTypeC
       <div className="p-3 md:p-4 border-b">
         <h2 className="font-semibold text-sm md:text-2xl lg:text-3xl lg:py-3 lg:px-4  mb-2">{reportTypeTitle}</h2>
         <Tabs value={currentReportType} onValueChange={(value) => onReportTypeChange(value as ReportType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-[#6A0DAD] text-white rounded-full ">
+          <TabsList className="grid w-full grid-cols-3 bg-[#6A0DAD] text-white rounded-full  ">
             <TabsTrigger
               value="daily"
-              className="text-xs px-1 data-[state=active]:bg-[#FFD700] data-[state=active]:text-[#6A0DAD] data-[state=active]:shadow-sm rounded-full transition-all duration-200"
+              className="text-xs px-1 data-[state=active]:bg-[#FFD700] data-[state=active]:text-[#6A0DAD] data-[state=active]:shadow-sm hover:bg-[#9244CB] rounded-full transition-all duration-200"
             >
               <CalendarDays className="h-3 w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2 " /><span className="lg:text-base">Daily</span>
             </TabsTrigger>
             <TabsTrigger
               value="weekly"
-              className="text-xs px-1 data-[state=active]:bg-[#FFD700] data-[state=active]:text-[#6A0DAD] data-[state=active]:shadow-sm rounded-full transition-all duration-200"
+              className="text-xs px-1 data-[state=active]:bg-[#FFD700] data-[state=active]:text-[#6A0DAD] data-[state=active]:shadow-sm hover:bg-[#9244CB] rounded-full transition-all duration-200"
             >
               <Columns className="h-3 w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2" /> <span className="lg:lg:text-base ">Weekly</span>
             </TabsTrigger>
             <TabsTrigger
               value="monthly"
-              className="text-xs px-1 data-[state=active]:bg-[#FFD700] data-[state=active]:text-[#6A0DAD] data-[state=active]:shadow-md rounded-full transition-all duration-200"
+              className="text-xs px-1 data-[state=active]:bg-[#FFD700] data-[state=active]:text-[#6A0DAD] data-[state=active]:shadow-md hover:bg-[#9244CB] rounded-full transition-all duration-200"
             >
               <Calendar className="h-3 w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2" /><span className="lg:lg:text-base ">Monthly</span>
             </TabsTrigger>
@@ -330,7 +330,7 @@ function SidebarContent({ reports, selectedReport, onReportSelect, onReportTypeC
                         key={report.id}
                         variant="ghost"
                         className={cn(
-                          "w-full justify-start text-left mb-1 h-auto py-2 pl-4 md:pl-6 hover:bg-muted/50  ",
+                          "w-full justify-start text-left mb-1 h-auto py-2 pl-4 md:pl-6 hover:bg-primary/10  ",
                           selectedReport?.id === report.id && "bg-muted font-semibold ",
                         )}
                         onClick={() => onReportSelect(report)}
