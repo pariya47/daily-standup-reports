@@ -483,25 +483,17 @@ export function processText(
 }
 
 // Find sentences containing a specific word
-export function findSentencesWithWord(text: string, word: string): string[] {
-  if (!text || !word) {
-    return []
+export function findSentencesWithWord(
+  sourceTexts: Array<{text: string | null | undefined, source: string}>,
+  word: string
+): Array<{sentence: string, source: string}> {
+  if (!word || !sourceTexts || sourceTexts.length === 0) {
+    return [];
   }
 
-  // For Thai text, we need a different approach to sentence segmentation
-  const containsThaiText = containsThai(text)
+  const allMatchingSentences: Array<{sentence: string, source: string}> = [];
 
-  let sentences: string[]
-
-  if (containsThaiText) {
-    // Thai sentences often end with space, newline, or Thai punctuation marks
-    sentences = text.split(/[.!?।\n]+|(\s{2,})/).filter((s) => s && !s.match(/^\s+$/)) // Remove empty strings and whitespace-only strings
-  } else {
-    // Split text into sentences (simple approach for non-Thai)
-    sentences = text.split(/[.!?।\n]+/).filter((s) => s && !s.match(/^\s+$/))
-  }
-
-  // Create variations of the word to search for
+  // Create variations of the word to search for (once)
   const wordVariations = [
     word, // Original word
     word.toLowerCase(), // Lowercase
@@ -509,38 +501,73 @@ export function findSentencesWithWord(text: string, word: string): string[] {
     word.replace(/[^a-zA-Z0-9\u0E00-\u0E7F]/g, ""), // Without special chars
     word.replace(/[^a-zA-Z0-9\u0E00-\u0E7F]/g, "-"), // With hyphens
     word.replace(/-/g, ""), // Without hyphens
-  ]
+  ].filter(Boolean); // Ensure no empty strings if word itself is problematic
+  
+  // If word is e.g. only symbols, wordVariations might be empty. Add original word back.
+  if (wordVariations.length === 0 && word.length > 0) {
+    wordVariations.push(word);
+  }
 
-  // Filter sentences containing any variation of the word
-  const matchingSentences = sentences.filter((sentence) => {
-    const sentenceLower = sentence.toLowerCase()
 
-    // Check for exact matches first (case insensitive)
-    if (sentenceLower.includes(word.toLowerCase())) {
-      return true
+  sourceTexts.forEach(sourceTextObj => {
+    const text = sourceTextObj.text;
+    const source = sourceTextObj.source;
+
+    if (!text || text.trim() === "") {
+      return; // Skip this source if its text is empty
     }
 
-    // Check for variations with special characters
-    for (const variation of wordVariations) {
-      // Skip empty variations
-      if (!variation) continue
+    const containsThaiText = containsThai(text);
+    let sentences: string[];
 
-      // For non-Thai words, check for word boundaries
-      if (!containsThai(variation)) {
-        const regex = new RegExp(`\\b${variation.replace(/[-]/g, "[\\-]?")}\\b`, "i")
-        if (regex.test(sentence)) {
-          return true
-        }
-      } else if (sentenceLower.includes(variation.toLowerCase())) {
-        // For Thai words, simple inclusion check is better
-        return true
+    if (containsThaiText) {
+      // Thai sentences often end with space, newline, or Thai punctuation marks
+      // The regex also tries to handle cases where multiple spaces are used as separators.
+      sentences = text.split(/[.!?।\n]+|(\s{2,})/).filter(s => s && s.trim().length > 0);
+    } else {
+      // Split text into sentences (simple approach for non-Thai)
+      sentences = text.split(/[.!?।\n]+/).filter(s => s && s.trim().length > 0);
+    }
+    
+    const matchingSentencesInCurrentText = sentences.filter(sentence => {
+      const sentenceLower = sentence.toLowerCase();
+
+      // Check for exact matches first (case insensitive) - useful for the original word form
+      if (sentenceLower.includes(word.toLowerCase())) {
+        return true;
       }
-    }
 
-    return false
-  })
+      // Check for variations (already lowercased or handled by regex flags)
+      for (const variation of wordVariations) {
+        // variation is already filtered for Boolean, so no need to check !variation
+        if (!containsThai(variation)) { // Non-Thai variations
+          // Regex for word boundaries, allowing hyphens within words
+          const escapedVariation = variation.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+          // Try to match variation as a whole word, potentially with internal hyphens
+          const regex = new RegExp(`\\b${escapedVariation.replace(/\\-/g, "[\\-]?")}\\b`, "i");
+          if (regex.test(sentence)) {
+            return true;
+          }
+        } else { // Thai variations
+          if (sentenceLower.includes(variation.toLowerCase())) { // Thai variations are already lowercased
+            return true;
+          }
+        }
+      }
+      return false;
+    });
 
-  return matchingSentences.map((sentence) => sentence.trim()).filter((sentence) => sentence.length > 0)
+    matchingSentencesInCurrentText.forEach(sentence => {
+      // Sentence is already trimmed from the split filter, but an extra trim won't hurt.
+      const trimmedSentence = sentence.trim(); 
+      // The filter after split already ensures length > 0, but double check is fine.
+      if (trimmedSentence.length > 0) { 
+        allMatchingSentences.push({ sentence: trimmedSentence, source: source });
+      }
+    });
+  });
+
+  return allMatchingSentences;
 }
 
 // Generate executive summary
