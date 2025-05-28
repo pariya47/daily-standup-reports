@@ -126,13 +126,13 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
   const getWordColor = (word: { source?: string }) => {
     switch (word.source) {
       case 'blockers':
-        return '#ff6b6b'; // Coral Red for blockers
+        return 'text-red-700 dark:text-red-400';
       case 'nextSteps':
-        return '#45b7d1'; // Sky Blue for next steps
+        return 'text-blue-700 dark:text-blue-400';
       case 'progress':
-        return '#4ecdc4'; // Teal/Green for progress
+        return 'text-green-700 dark:text-green-400';
       default:
-        return '#ffffff'; // White or a default text color
+        return 'text-foreground'; // Uses the default text color from the theme
     }
   };
 
@@ -208,9 +208,8 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
             {words.map((word, index) => (
               <div
                 key={`${word.text}-${index}`}
-                className={`${getFontSize(word.value)} font-semibold cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-glow active:scale-95 select-none`}
+                className={`${getFontSize(word.value)} font-semibold cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-glow active:scale-95 select-none ${getWordColor(word)}`}
                 style={{
-                  color: getWordColor(word), // Pass the whole word object
                   textShadow: "0 0 5px rgba(0,0,0,0.3)",
                   padding: "0.125rem 0.25rem",
                   lineHeight: "1.2",
