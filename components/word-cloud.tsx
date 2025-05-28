@@ -18,31 +18,40 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
 
   // Process text to generate word cloud data
   useEffect(() => {
-    if (!report?.content) {
-      setWords([])
-      setLoading(false)
-      return
+    if (!report) {
+      setWords([{ text: "No report selected", value: 1 }]);
+      setLoading(false);
+      return;
     }
 
-    setLoading(true)
-    try {
-      // Process the text to generate word cloud data
-      const processedWords = processText(report.content, stopWordFilter)
+    // Concatenate progress, blockers, and nextSteps strings
+    const textSources = [
+      report.progress || "",
+      report.blockers || "",
+      report.nextSteps || ""
+    ];
+    const combinedText = textSources.join(" ").replace(/\s+/g, ' ').trim();
 
-      // Ensure we have at least some words to display
+    if (!combinedText) {
+      setWords([{ text: "No significant words to display", value: 1 }]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const processedWords = processText(combinedText, stopWordFilter);
       if (processedWords.length === 0) {
-        // Add a default word if no words were found
-        setWords([{ text: "No significant words found", value: 1 }])
+        setWords([{ text: "No significant words found", value: 1 }]);
       } else {
-        setWords(processedWords)
+        setWords(processedWords);
       }
     } catch (error) {
-      console.error("Error processing text:", error)
-      // Provide fallback data in case of error
-      setWords([{ text: "Error processing text", value: 1 }])
+      console.error("Error processing text for word cloud:", error);
+      setWords([{ text: "Error processing text", value: 1 }]);
     }
-    setLoading(false)
-  }, [report, stopWordFilter])
+    setLoading(false);
+  }, [report?.id, report?.progress, report?.blockers, report?.nextSteps, stopWordFilter]);
 
   // Get the maximum value for scaling
   const maxValue = words.length > 0 ? Math.max(...words.map((word) => word.value)) : 1
@@ -71,26 +80,39 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
 
   // When processing text, store a mapping of normalized words to their original form
   useEffect(() => {
-    if (!report?.content) return
+    if (!report) {
+      setOriginalWords({});
+      return;
+    }
 
-    // Create a simple mapping of lowercase words to their original form
-    const wordMap: Record<string, string> = {}
+    // Concatenate progress, blockers, and nextSteps strings
+    const textSources = [
+      report.progress || "",
+      report.blockers || "",
+      report.nextSteps || ""
+    ];
+    const combinedText = textSources.join(" ").replace(/\s+/g, ' ').trim();
+    
+    if (!combinedText) {
+      setOriginalWords({});
+      return;
+    }
 
-    // Extract words with regex that preserves special characters
-    const wordRegex = /[\w\u0E00-\u0E7F]+-?[\w\u0E00-\u0E7F]+|[\w\u0E00-\u0E7F]+/g
-    const matches = report.content.match(wordRegex) || []
+    const wordMap: Record<string, string> = {};
+    const wordRegex = /[\w\u0E00-\u0E7F]+-?[\w\u0E00-\u0E7F]+|[\w\u0E00-\u0E7F]+/g; // Keep the existing regex
+    const matches = combinedText.match(wordRegex) || [];
 
     matches.forEach((word) => {
-      // Store both the original word and versions without special chars
-      const normalized = word.toLowerCase()
-      const withoutSpecialChars = normalized.replace(/[^a-z0-9\u0E00-\u0E7F]/g, "")
+      const normalized = word.toLowerCase();
+      const withoutSpecialChars = normalized.replace(/[^a-z0-9\u0E00-\u0E7F]/g, "");
+      wordMap[normalized] = word;
+      if (withoutSpecialChars !== normalized) { 
+         wordMap[withoutSpecialChars] = word;
+      }
+    });
 
-      wordMap[normalized] = word
-      wordMap[withoutSpecialChars] = word
-    })
-
-    setOriginalWords(wordMap)
-  }, [report?.content])
+    setOriginalWords(wordMap);
+  }, [report?.id, report?.progress, report?.blockers, report?.nextSteps]);
 
   // Handle word click with original form if available
   const handleWordClick = (word: string) => {
