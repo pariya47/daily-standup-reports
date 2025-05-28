@@ -36,54 +36,83 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
 
     if (!report) {
       const noReportWords = [{ text: "No report selected", value: 1 }];
-      console.log("[WordCloud Debug] Final words state to be set:", noReportWords);
-      console.log("[WordCloud Debug] Setting loading to false.");
+      console.log("[WordCloud Debug] Final words state to be set (no report):", noReportWords);
+      console.log("[WordCloud Debug] Setting loading to false (no report).");
       setWords(noReportWords);
       setLoading(false);
       return;
     }
 
-    const cleanedProgress = stripMarkdown(report.progress);
-    const cleanedBlockers = stripMarkdown(report.blockers);
-    const cleanedNextSteps = stripMarkdown(report.nextSteps);
-
-    const textSources = [
-      cleanedProgress,
-      cleanedBlockers,
-      cleanedNextSteps
-    ];
-    const nonEmptySources = textSources.filter(s => s && s.trim() !== "");
-    const combinedText = nonEmptySources.join(" ").replace(/\s+/g, ' ').trim();
-    console.log("[WordCloud Debug] combinedText for processText:", combinedText);
-
-    if (!combinedText) {
-      const noCombinedTextWords = [{ text: "No significant words to display", value: 1 }];
-      console.log("[WordCloud Debug] Final words state to be set:", noCombinedTextWords);
-      console.log("[WordCloud Debug] Setting loading to false.");
-      setWords(noCombinedTextWords);
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
-    let wordsVariable: Array<{ text: string; value: number }>;
+    let wordsVariable: Array<{ text: string; value: number; source?: string } | { text: string; value: number }>; // Allow source for aggregated words
+
     try {
-      const processedWords = processText(combinedText, stopWordFilter);
-      console.log("[WordCloud Debug] processedWords from processText:", processedWords);
-      if (processedWords.length === 0) {
+      const cleanedProgress = stripMarkdown(report.progress);
+      const cleanedBlockers = stripMarkdown(report.blockers);
+      const cleanedNextSteps = stripMarkdown(report.nextSteps);
+      console.log("[WordCloud Debug] Cleaned Progress:", cleanedProgress);
+      console.log("[WordCloud Debug] Cleaned Blockers:", cleanedBlockers);
+      console.log("[WordCloud Debug] Cleaned Next Steps:", cleanedNextSteps);
+
+      const progressItems = processText(cleanedProgress, stopWordFilter);
+      const blockersItems = processText(cleanedBlockers, stopWordFilter);
+      const nextStepsItems = processText(cleanedNextSteps, stopWordFilter);
+      console.log("[WordCloud Debug] Progress Items:", progressItems);
+      console.log("[WordCloud Debug] Blockers Items:", blockersItems);
+      console.log("[WordCloud Debug] Next Steps Items:", nextStepsItems);
+      
+      const progressFreqMap = new Map(progressItems.map(item => [item.text, item.value]));
+      const blockersFreqMap = new Map(blockersItems.map(item => [item.text, item.value]));
+      const nextStepsFreqMap = new Map(nextStepsItems.map(item => [item.text, item.value]));
+
+      const allWords = new Set([
+        ...progressItems.map(item => item.text),
+        ...blockersItems.map(item => item.text),
+        ...nextStepsItems.map(item => item.text),
+      ]);
+      console.log("[WordCloud Debug] All unique words:", allWords);
+
+      let aggregatedWords: Array<{ text: string; value: number; source: 'progress' | 'blockers' | 'nextSteps' | 'default' }> = [];
+      allWords.forEach(word => {
+        const progressCount = progressFreqMap.get(word) || 0;
+        const blockersCount = blockersFreqMap.get(word) || 0;
+        const nextStepsCount = nextStepsFreqMap.get(word) || 0;
+        const totalValue = progressCount + blockersCount + nextStepsCount;
+
+        if (totalValue === 0) return; 
+
+        let source: 'progress' | 'blockers' | 'nextSteps' | 'default' = 'default';
+        if (blockersCount > 0) {
+          source = 'blockers';
+        } else if (nextStepsCount > 0) {
+          source = 'nextSteps';
+        } else if (progressCount > 0) {
+          source = 'progress';
+        }
+        aggregatedWords.push({ text: word, value: totalValue, source });
+      });
+      console.log("[WordCloud Debug] Aggregated words before sort:", aggregatedWords);
+
+      aggregatedWords.sort((a, b) => b.value - a.value);
+      const finalWordsForCloud = aggregatedWords.slice(0, 100);
+      console.log("[WordCloud Debug] Final words for cloud (top 100):", finalWordsForCloud);
+
+      if (finalWordsForCloud.length === 0) {
         wordsVariable = [{ text: "No significant words found", value: 1 }];
       } else {
-        wordsVariable = processedWords;
+        wordsVariable = finalWordsForCloud;
       }
+
     } catch (error) {
       console.error("[WordCloud Debug] Error processing text in WordCloud:", error);
       wordsVariable = [{ text: "Error processing text", value: 1 }];
-      console.log("[WordCloud Debug] Final words state to be set:", wordsVariable);
-      console.log("[WordCloud Debug] Setting loading to false.");
+      console.log("[WordCloud Debug] Final words state to be set (error):", wordsVariable);
+      console.log("[WordCloud Debug] Setting loading to false (error).");
       setWords(wordsVariable);
       setLoading(false);
-      return; // Explicitly return after handling error
+      return; 
     }
+    
     console.log("[WordCloud Debug] Final words state to be set:", wordsVariable);
     console.log("[WordCloud Debug] Setting loading to false.");
     setWords(wordsVariable);
@@ -93,14 +122,19 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
   // Get the maximum value for scaling
   const maxValue = words.length > 0 ? Math.max(...words.map((word) => word.value)) : 1
 
-  // Function to determine word color based on value
-  const getWordColor = (value: number) => {
-    const ratio = value / maxValue
-    if (ratio > 0.75) return "#ff6b6b" // Tier 1: Coral Red
-    if (ratio > 0.5) return "#4ecdc4" // Tier 2: Teal
-    if (ratio > 0.25) return "#45b7d1" // Tier 3: Sky Blue
-    return "#ffffff" // Tier 4: White
-  }
+  // Function to determine word color based on source
+  const getWordColor = (word: { source?: string }) => {
+    switch (word.source) {
+      case 'blockers':
+        return '#ff6b6b'; // Coral Red for blockers
+      case 'nextSteps':
+        return '#45b7d1'; // Sky Blue for next steps
+      case 'progress':
+        return '#4ecdc4'; // Teal/Green for progress
+      default:
+        return '#ffffff'; // White or a default text color
+    }
+  };
 
   // Function to determine font size based on value (responsive)
   const getFontSize = (value: number) => {
@@ -176,7 +210,7 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
                 key={`${word.text}-${index}`}
                 className={`${getFontSize(word.value)} font-semibold cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-glow active:scale-95 select-none`}
                 style={{
-                  color: getWordColor(word.value),
+                  color: getWordColor(word), // Pass the whole word object
                   textShadow: "0 0 5px rgba(0,0,0,0.3)",
                   padding: "0.125rem 0.25rem",
                   lineHeight: "1.2",
