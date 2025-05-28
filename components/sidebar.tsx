@@ -124,13 +124,89 @@ function createPeriodSummary(reports: Report[], periodIdentifier: string, report
   
   // Use the first report's createdAt for the summary's createdAt, or generate based on periodIdentifier
   let summaryDate = new Date()
-  if (reports.length > 0) {
-    summaryDate = reports[0].createdAt; // Default to first report's date
+  if (reports.length > 0 && reports[0].createdAt) { // Ensure reports[0] and its createdAt exist
+    summaryDate = reports[0].createdAt; 
+  } else if (reportType === 'daily') {
+    summaryDate = new Date(periodIdentifier);
   }
-  if (reportType === 'daily') summaryDate = new Date(periodIdentifier);
-  else if (reportType === 'weekly') summaryDate = startOfWeek(new Date(reports[0]?.createdAt || periodIdentifier.split('-W')[0] + '-01-01'), { weekStartsOn: 1 }); // Approx
-  else if (reportType === 'monthly') summaryDate = startOfMonth(new Date(reports[0]?.createdAt || periodIdentifier + '-01'));
+  // Further refinement of summaryDate based on reportType and periodIdentifier
+  if (reportType === 'daily') {
+      summaryDate = new Date(periodIdentifier);
+  } else if (reportType === 'weekly' && reports.length > 0 && reports[0].createdAt) {
+      summaryDate = startOfWeek(reports[0].createdAt, { weekStartsOn: 1 });
+  } else if (reportType === 'weekly') { // Fallback if reports[0] or createdAt is null
+      const year = parseInt(periodIdentifier.split('-')[0], 10);
+      const weekNum = parseInt(periodIdentifier.split('-')[1], 10);
+      summaryDate = startOfWeek(new Date(year, 0, 1 + (weekNum - 1) * 7), { weekStartsOn: 1 });
+  } else if (reportType === 'monthly' && reports.length > 0 && reports[0].createdAt) {
+      summaryDate = startOfMonth(reports[0].createdAt);
+  } else if (reportType === 'monthly') { // Fallback
+      const year = parseInt(periodIdentifier.split('-')[0], 10);
+      const monthIndex = parseInt(periodIdentifier.split('-')[1], 10) - 1;
+      summaryDate = startOfMonth(new Date(year, monthIndex, 1));
+  }
 
+
+  const aggregatedProgressLines: string[] = [];
+  reports.forEach((report, reportIndex) => {
+    if (report.progress && typeof report.progress === 'string' && report.progress.trim() !== "") {
+      const lines = report.progress.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      if (lines.length > 0) {
+        if (reports.length > 1) {
+          aggregatedProgressLines.push(`**${report.teamName} (${format(report.createdAt!, "MMM d")})**`);
+        }
+        lines.forEach(line => {
+          aggregatedProgressLines.push(line);
+        });
+        if (reports.length > 1 && reportIndex < reports.length - 1 && lines.length > 0) {
+           // Add separator if not the last report and it had content
+           const nextReportHasProgress = reports.slice(reportIndex + 1).some(r => r.progress && r.progress.trim() !== "");
+           if (nextReportHasProgress) aggregatedProgressLines.push("\n---\n");
+        }
+      }
+    }
+  });
+  const summaryProgress = aggregatedProgressLines.join('\n');
+
+  const aggregatedBlockersLines: string[] = [];
+  reports.forEach((report, reportIndex) => {
+    if (report.blockers && typeof report.blockers === 'string' && report.blockers.trim() !== "") {
+      const lines = report.blockers.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      if (lines.length > 0) {
+        if (reports.length > 1) {
+          aggregatedBlockersLines.push(`**${report.teamName} (${format(report.createdAt!, "MMM d")})**`);
+        }
+        lines.forEach(line => {
+          aggregatedBlockersLines.push(line);
+        });
+        if (reports.length > 1 && reportIndex < reports.length - 1 && lines.length > 0) {
+            const nextReportHasBlockers = reports.slice(reportIndex + 1).some(r => r.blockers && r.blockers.trim() !== "");
+            if (nextReportHasBlockers) aggregatedBlockersLines.push("\n---\n");
+        }
+      }
+    }
+  });
+  const summaryBlockers = aggregatedBlockersLines.join('\n');
+
+  const aggregatedNextStepsLines: string[] = [];
+  reports.forEach((report, reportIndex) => {
+    if (report.nextSteps && typeof report.nextSteps === 'string' && report.nextSteps.trim() !== "") {
+      const lines = report.nextSteps.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      if (lines.length > 0) {
+        if (reports.length > 1) {
+          aggregatedNextStepsLines.push(`**${report.teamName} (${format(report.createdAt!, "MMM d")})**`);
+        }
+        lines.forEach(line => {
+          aggregatedNextStepsLines.push(line);
+        });
+        if (reports.length > 1 && reportIndex < reports.length - 1 && lines.length > 0) {
+            const nextReportHasNextSteps = reports.slice(reportIndex + 1).some(r => r.nextSteps && r.nextSteps.trim() !== "");
+            if (nextReportHasNextSteps) aggregatedNextStepsLines.push("\n---\n");
+        }
+      }
+    }
+  });
+  const summaryNextSteps = aggregatedNextStepsLines.join('\n');
 
   return {
     id: `summary-${reportType}-${periodIdentifier}`,
@@ -138,7 +214,10 @@ function createPeriodSummary(reports: Report[], periodIdentifier: string, report
     createdAt: summaryDate,
     teamName: `${titlePrefix}`,
     reportType: reportType,
-  }
+    progress: summaryProgress || null, // Ensure null if empty, consistent with Report type
+    blockers: summaryBlockers || null,
+    nextSteps: summaryNextSteps || null,
+  };
 }
 
 function SidebarContent({ reports, selectedReport, onReportSelect, onReportTypeChange, currentReportType }: SidebarProps) {
