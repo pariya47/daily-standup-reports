@@ -1,3 +1,4 @@
+import { useMemo } from "react"; // Added useMemo import
 import type { Report } from "@/lib/types"
 import { findSentencesWithWord } from "@/lib/text-processor"
 import {
@@ -19,8 +20,48 @@ interface ReferencesDrawerProps {
   report: Report | null
 }
 
+const stripMarkdown = (text: string | null | undefined): string => {
+  if (!text) return "";
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1') // Replace **bold** with content
+    .replace(/\*(.*?)\*/g, '$1')   // Replace *italic* with content
+    .replace(/---/g, '')          // Remove --- rule lines
+    .trim();
+};
+
 export function ReferencesDrawer({ isOpen, onClose, word, report }: ReferencesDrawerProps) {
-  const sentences = word && report ? findSentencesWithWord(report.content, word) : []
+  const cleanedProgress = useMemo(() => stripMarkdown(report?.progress), [report?.progress]);
+  const cleanedBlockers = useMemo(() => stripMarkdown(report?.blockers), [report?.blockers]);
+  const cleanedNextSteps = useMemo(() => stripMarkdown(report?.nextSteps), [report?.nextSteps]);
+
+  const sourcesToSearch = useMemo(() => {
+    if (!report) return [];
+    return [
+      { text: cleanedProgress, source: 'Progress' },
+      { text: cleanedBlockers, source: 'Blockers' },
+      { text: cleanedNextSteps, source: 'Next Steps' }
+    ].filter(s => s.text && s.text.trim() !== ''); // Only include sources with actual text
+  }, [report, cleanedProgress, cleanedBlockers, cleanedNextSteps]);
+
+  const sentencesFound = useMemo(() => {
+    if (word && report && sourcesToSearch.length > 0) {
+      return findSentencesWithWord(sourcesToSearch, word);
+    }
+    return [];
+  }, [word, report, sourcesToSearch]);
+
+  const getSourceBadgeClass = (source: string): string => {
+    switch (source.toLowerCase()) {
+      case 'progress':
+        return 'bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-300';
+      case 'blockers':
+        return 'bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-300';
+      case 'next steps':
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-700/20 dark:text-blue-300';
+      default:
+        return 'bg-gray-100 text-gray-700 dark:bg-gray-700/20 dark:text-gray-300';
+    }
+  };
 
   // Function to highlight word variations in text
   const highlightWord = (sentence: string, word: string) => {
@@ -73,11 +114,16 @@ export function ReferencesDrawer({ isOpen, onClose, word, report }: ReferencesDr
             </DrawerDescription>
           </DrawerHeader>
           <ScrollArea className="h-[40vh] md:h-[50vh] px-4 md:px-6">
-            {sentences.length > 0 ? (
+            {sentencesFound.length > 0 ? (
               <ul className="space-y-3 md:space-y-4 pb-4">
-                {sentences.map((sentence, index) => (
+                {sentencesFound.map((item, index) => (
                   <li key={index} className="p-3 rounded-md bg-muted/30 text-sm md:text-base leading-relaxed">
-                    {highlightWord(sentence, word || "")}
+                    <div className="flex items-center mb-1">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getSourceBadgeClass(item.source)}`}>
+                        {item.source}
+                      </span>
+                    </div>
+                    {highlightWord(item.sentence, word || "")}
                   </li>
                 ))}
               </ul>

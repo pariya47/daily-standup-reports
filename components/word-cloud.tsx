@@ -5,6 +5,15 @@ import { processText } from "@/lib/text-processor"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Report } from "@/lib/types"
 
+const stripMarkdown = (text: string | null | undefined): string => {
+  if (!text) return "";
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1') 
+    .replace(/\*(.*?)\*/g, '$1')   
+    .replace(/---/g, '')          
+    .trim();
+};
+
 interface WordCloudProps {
   report: Report
   stopWordFilter: "english" | "thai" | "any"
@@ -18,43 +27,114 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
 
   // Process text to generate word cloud data
   useEffect(() => {
-    if (!report?.content) {
-      setWords([])
-      setLoading(false)
-      return
+    console.log("[WordCloud Debug] Report received:", report);
+    if (report) {
+      console.log("[WordCloud Debug] report.progress:", report.progress);
+      console.log("[WordCloud Debug] report.blockers:", report.blockers);
+      console.log("[WordCloud Debug] report.nextSteps:", report.nextSteps);
     }
 
-    setLoading(true)
+    if (!report) {
+      const noReportWords = [{ text: "No report selected", value: 1 }];
+      console.log("[WordCloud Debug] Final words state to be set (no report):", noReportWords);
+      console.log("[WordCloud Debug] Setting loading to false (no report).");
+      setWords(noReportWords);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    let wordsVariable: Array<{ text: string; value: number; source?: string } | { text: string; value: number }>; // Allow source for aggregated words
+
     try {
-      // Process the text to generate word cloud data
-      const processedWords = processText(report.content, stopWordFilter)
+      const cleanedProgress = stripMarkdown(report.progress);
+      const cleanedBlockers = stripMarkdown(report.blockers);
+      const cleanedNextSteps = stripMarkdown(report.nextSteps);
+      console.log("[WordCloud Debug] Cleaned Progress:", cleanedProgress);
+      console.log("[WordCloud Debug] Cleaned Blockers:", cleanedBlockers);
+      console.log("[WordCloud Debug] Cleaned Next Steps:", cleanedNextSteps);
 
-      // Ensure we have at least some words to display
-      if (processedWords.length === 0) {
-        // Add a default word if no words were found
-        setWords([{ text: "No significant words found", value: 1 }])
+      const progressItems = processText(cleanedProgress, stopWordFilter);
+      const blockersItems = processText(cleanedBlockers, stopWordFilter);
+      const nextStepsItems = processText(cleanedNextSteps, stopWordFilter);
+      console.log("[WordCloud Debug] Progress Items:", progressItems);
+      console.log("[WordCloud Debug] Blockers Items:", blockersItems);
+      console.log("[WordCloud Debug] Next Steps Items:", nextStepsItems);
+      
+      const progressFreqMap = new Map(progressItems.map(item => [item.text, item.value]));
+      const blockersFreqMap = new Map(blockersItems.map(item => [item.text, item.value]));
+      const nextStepsFreqMap = new Map(nextStepsItems.map(item => [item.text, item.value]));
+
+      const allWords = new Set([
+        ...progressItems.map(item => item.text),
+        ...blockersItems.map(item => item.text),
+        ...nextStepsItems.map(item => item.text),
+      ]);
+      console.log("[WordCloud Debug] All unique words:", allWords);
+
+      let aggregatedWords: Array<{ text: string; value: number; source: 'progress' | 'blockers' | 'nextSteps' | 'default' }> = [];
+      allWords.forEach(word => {
+        const progressCount = progressFreqMap.get(word) || 0;
+        const blockersCount = blockersFreqMap.get(word) || 0;
+        const nextStepsCount = nextStepsFreqMap.get(word) || 0;
+        const totalValue = progressCount + blockersCount + nextStepsCount;
+
+        if (totalValue === 0) return; 
+
+        let source: 'progress' | 'blockers' | 'nextSteps' | 'default' = 'default';
+        if (blockersCount > 0) {
+          source = 'blockers';
+        } else if (nextStepsCount > 0) {
+          source = 'nextSteps';
+        } else if (progressCount > 0) {
+          source = 'progress';
+        }
+        aggregatedWords.push({ text: word, value: totalValue, source });
+      });
+      console.log("[WordCloud Debug] Aggregated words before sort:", aggregatedWords);
+
+      aggregatedWords.sort((a, b) => b.value - a.value);
+      const finalWordsForCloud = aggregatedWords.slice(0, 100);
+      console.log("[WordCloud Debug] Final words for cloud (top 100):", finalWordsForCloud);
+
+      if (finalWordsForCloud.length === 0) {
+        wordsVariable = [{ text: "No significant words found", value: 1 }];
       } else {
-        setWords(processedWords)
+        wordsVariable = finalWordsForCloud;
       }
+
     } catch (error) {
-      console.error("Error processing text:", error)
-      // Provide fallback data in case of error
-      setWords([{ text: "Error processing text", value: 1 }])
+      console.error("[WordCloud Debug] Error processing text in WordCloud:", error);
+      wordsVariable = [{ text: "Error processing text", value: 1 }];
+      console.log("[WordCloud Debug] Final words state to be set (error):", wordsVariable);
+      console.log("[WordCloud Debug] Setting loading to false (error).");
+      setWords(wordsVariable);
+      setLoading(false);
+      return; 
     }
-    setLoading(false)
-  }, [report, stopWordFilter])
+    
+    console.log("[WordCloud Debug] Final words state to be set:", wordsVariable);
+    console.log("[WordCloud Debug] Setting loading to false.");
+    setWords(wordsVariable);
+    setLoading(false);
+  }, [report?.id, report?.progress, report?.blockers, report?.nextSteps, stopWordFilter]);
 
   // Get the maximum value for scaling
   const maxValue = words.length > 0 ? Math.max(...words.map((word) => word.value)) : 1
 
-  // Function to determine word color based on value
-  const getWordColor = (value: number) => {
-    const ratio = value / maxValue
-    if (ratio > 0.75) return "#ff6b6b" // Tier 1: Coral Red
-    if (ratio > 0.5) return "#4ecdc4" // Tier 2: Teal
-    if (ratio > 0.25) return "#45b7d1" // Tier 3: Sky Blue
-    return "#ffffff" // Tier 4: White
-  }
+  // Function to determine word color based on source
+  const getWordColor = (word: { source?: string }) => {
+    switch (word.source) {
+      case 'blockers':
+        return 'text-red-700 dark:text-red-400';
+      case 'nextSteps':
+        return 'text-blue-700 dark:text-blue-400';
+      case 'progress':
+        return 'text-green-700 dark:text-green-400';
+      default:
+        return 'text-foreground'; // Uses the default text color from the theme
+    }
+  };
 
   // Function to determine font size based on value (responsive)
   const getFontSize = (value: number) => {
@@ -71,26 +151,43 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
 
   // When processing text, store a mapping of normalized words to their original form
   useEffect(() => {
-    if (!report?.content) return
+    if (!report) {
+      setOriginalWords({});
+      return;
+    }
 
-    // Create a simple mapping of lowercase words to their original form
-    const wordMap: Record<string, string> = {}
+    const cleanedProgress = stripMarkdown(report.progress);
+    const cleanedBlockers = stripMarkdown(report.blockers);
+    const cleanedNextSteps = stripMarkdown(report.nextSteps);
 
-    // Extract words with regex that preserves special characters
-    const wordRegex = /[\w\u0E00-\u0E7F]+-?[\w\u0E00-\u0E7F]+|[\w\u0E00-\u0E7F]+/g
-    const matches = report.content.match(wordRegex) || []
+    const textSources = [
+      cleanedProgress,
+      cleanedBlockers,
+      cleanedNextSteps
+    ];
+    const nonEmptySources = textSources.filter(s => s && s.trim() !== "");
+    const combinedText = nonEmptySources.join(" ").replace(/\s+/g, ' ').trim();
+    
+    if (!combinedText) {
+      setOriginalWords({});
+      return;
+    }
+
+    const wordMap: Record<string, string> = {};
+    const wordRegex = /[\w\u0E00-\u0E7F]+-?[\w\u0E00-\u0E7F]+|[\w\u0E00-\u0E7F]+/g; // Keep the existing regex
+    const matches = combinedText.match(wordRegex) || [];
 
     matches.forEach((word) => {
-      // Store both the original word and versions without special chars
-      const normalized = word.toLowerCase()
-      const withoutSpecialChars = normalized.replace(/[^a-z0-9\u0E00-\u0E7F]/g, "")
+      const normalized = word.toLowerCase();
+      const withoutSpecialChars = normalized.replace(/[^a-z0-9\u0E00-\u0E7F]/g, "");
+      wordMap[normalized] = word;
+      if (withoutSpecialChars !== normalized) { 
+         wordMap[withoutSpecialChars] = word;
+      }
+    });
 
-      wordMap[normalized] = word
-      wordMap[withoutSpecialChars] = word
-    })
-
-    setOriginalWords(wordMap)
-  }, [report?.content])
+    setOriginalWords(wordMap);
+  }, [report?.id, report?.progress, report?.blockers, report?.nextSteps]);
 
   // Handle word click with original form if available
   const handleWordClick = (word: string) => {
@@ -111,9 +208,8 @@ export function WordCloud({ report, stopWordFilter, onWordClick }: WordCloudProp
             {words.map((word, index) => (
               <div
                 key={`${word.text}-${index}`}
-                className={`${getFontSize(word.value)} font-semibold cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-glow active:scale-95 select-none`}
+                className={`${getFontSize(word.value)} font-semibold cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-glow active:scale-95 select-none ${getWordColor(word)}`}
                 style={{
-                  color: getWordColor(word.value),
                   textShadow: "0 0 5px rgba(0,0,0,0.3)",
                   padding: "0.125rem 0.25rem",
                   lineHeight: "1.2",
