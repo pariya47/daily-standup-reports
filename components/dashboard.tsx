@@ -13,6 +13,7 @@ import { ReferencesDrawer } from "@/components/references-drawer"
 import { CommandDialogDemo } from "@/components/cmd"
 import type { Report, ReportType } from "@/lib/types"
 import { fetchDailyReports, fetchWeeklyReports, fetchMonthlyReports } from "@/lib/supabase"
+import { Chatbot } from "@/components/Chatbot"; // Added Chatbot import
 
 export function Dashboard() {
   const [reports, setReports] = useState<Report[]>([])
@@ -107,6 +108,7 @@ export function Dashboard() {
 
   return (
     <div className="flex h-screen bg-background">
+      <Chatbot bot_id="6837c8484051a6de6d123375" theme_color="#007AFF" />
       <Sidebar
         reports={reports}
         selectedReport={selectedReport}
