@@ -166,7 +166,7 @@ export function FullReport({ report }: FullReportProps) {
       return (
         <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
           {/* Progress Column */}
-          <div className="flex-1 p-3 rounded-lg border bg-green-100 dark:bg-green-900/30 border-green-500/50">
+          <div className="flex-1 p-3 rounded-lg border bg-green-100 dark:bg-green-900/30 border-green-500/50 hover:shadow-[0_0px_30px_rgba(0,139,0,0.9)]">
             <h3 className="text-lg font-semibold mb-3 text-green-700 dark:text-green-300 lg:text-3xl"><Blocks className="h- w-3 lg:h-6 lg:w-6 mr-1 sm:mr-2 inline" />Progress</h3>
             {(() => {
               const progressRendered = renderMarkdownLike(report.progress);
@@ -175,7 +175,7 @@ export function FullReport({ report }: FullReportProps) {
           </div>
 
           {/* Blockers Column */}
-          <div className="flex-1 p-3 rounded-lg border bg-red-100 dark:bg-red-900/30 border-red-500/50">
+          <div className="flex-1 p-3 rounded-lg border bg-red-100 dark:bg-red-900/30 border-red-500/50 hover:shadow-[0_0px_30px_rgba(139,0,0,0.9)]">
             <h3 className="text-lg font-semibold mb-3 text-red-700 dark:text-red-300 lg:text-3xl"><Frown className="h-3 w-3 lg:h-6 lg:w-6 mr-1 sm:mr-2 inline" />Blockers</h3>
             {(() => {
               const blockersRendered = renderMarkdownLike(report.blockers);
@@ -184,7 +184,7 @@ export function FullReport({ report }: FullReportProps) {
           </div>
 
           {/* Next Steps Column */}
-          <div className="flex-1 p-3 rounded-lg border bg-blue-100 dark:bg-blue-900/30 border-blue-500/50">
+          <div className="flex-1 p-3 rounded-lg border bg-blue-100 dark:bg-blue-900/30 border-blue-500/50 hover:shadow-[0_0px_30px_rgba(0,0,139,0.9)]">
             <h3 className="text-lg font-semibold mb-3 text-blue-700 dark:text-blue-300 lg:text-3xl"><Navigation className="h-3 w-3 lg:h-6 lg:w-6 mr-1 sm:mr-2 inline" />Next Steps</h3>
             {(() => {
               const nextStepsRendered = renderMarkdownLike(report.nextSteps);

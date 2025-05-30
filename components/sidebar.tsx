@@ -254,28 +254,32 @@ function SidebarContent({ reports, selectedReport, onReportSelect, onReportTypeC
   const reportTypeTitle = currentReportType.charAt(0).toUpperCase() + currentReportType.slice(1) + " Reports";
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-3 md:p-4 border-b">
+    <div className="flex flex-col h-full ">
+      <div className="p-3 md:p-4  ">
         <h2 className="font-semibold text-sm md:text-2xl lg:text-3xl lg:py-3 lg:px-4  mb-2">{reportTypeTitle}</h2>
+
         <Tabs value={currentReportType} onValueChange={(value) => onReportTypeChange(value as ReportType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-[#6A0DAD] text-white rounded-full  ">
+          <TabsList className="grid w-full grid-cols-3 bg-gradient-to-l from-gray-800 via-pink-700 to-pink-700/20 text-white rounded-full border-2 border-purple-500 ">
             <TabsTrigger
               value="daily"
-              className="text-xs px-1 data-[state=active]:bg-[#FFD700] data-[state=active]:text-[#6A0DAD] data-[state=active]:shadow-sm hover:bg-[#9244CB] rounded-full transition-all duration-200"
+              className="w-full h-full flex items-center justify-center gap-2 text-xs rounded-full transition-all duration-200 hover:bg-pink-800 data-[state=active]:bg-gradient-to-l from-pink-600 to-pink-800/50 data-[state=active]:text-white  data-[state=active]:shadow-sm"
             >
-              <CalendarDays className="h-3 w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2 " /><span className="lg:text-base">Daily</span>
+              <CalendarDays className="h-4 w-4 shrink-0" />
+              <span className="lg:text-base">Daily</span>
             </TabsTrigger>
             <TabsTrigger
               value="weekly"
-              className="text-xs px-1 data-[state=active]:bg-[#FFD700] data-[state=active]:text-[#6A0DAD] data-[state=active]:shadow-sm hover:bg-[#9244CB] rounded-full transition-all duration-200"
+              className="w-full h-full flex items-center justify-center gap-2 text-xs rounded-full transition-all duration-200 hover:bg-pink-800 data-[state=active]:bg-gradient-to-l from-pink-700 to-pink-800/50 data-[state=active]:text-white data-[state=active]:shadow-sm"
             >
-              <Columns className="h-3 w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2" /> <span className="lg:lg:text-base ">Weekly</span>
+              <Columns className="h-4 w-4 shrink-0" />
+              <span className="lg:text-base">Weekly</span>
             </TabsTrigger>
             <TabsTrigger
               value="monthly"
-              className="text-xs px-1 data-[state=active]:bg-[#FFD700] data-[state=active]:text-[#6A0DAD] data-[state=active]:shadow-md hover:bg-[#9244CB] rounded-full transition-all duration-200"
+              className="w-full h-full flex items-center justify-center gap-2 text-xs rounded-full transition-all duration-200 hover:bg-pink-800 data-[state=active]:bg-gradient-to-l from-pink-700 to-pink-800/50 data-[state=active]:text-white data-[state=active]:shadow-sm"
             >
-              <Calendar className="h-3 w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2" /><span className="lg:lg:text-base ">Monthly</span>
+              <Calendar className="h-4 w-4 shrink-0" />
+              <span className="lg:text-base">Monthly</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>

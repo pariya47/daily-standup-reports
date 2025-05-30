@@ -52,7 +52,7 @@ export function Dashboard() {
           if (a.teamName > b.teamName) return 1;
           return 0;
         });
-        
+
         setReports(fetchedReports)
 
         if (fetchedReports.length > 0) {
@@ -106,7 +106,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-gradient-to-b from-gray-900 to-pink-900 ">
       <Sidebar
         reports={reports}
         selectedReport={selectedReport}
@@ -120,9 +120,9 @@ export function Dashboard() {
             {selectedReport?.createdAt
               ? selectedReport.createdAt.toLocaleDateString('en-US', { day: '2-digit', month: 'long', timeZone: 'UTC' })
               : ""}: {selectedReport?.teamName
-              ? selectedReport.teamName.charAt(0).toUpperCase() + selectedReport.teamName.slice(1)
-              : currentReportType.charAt(0).toUpperCase() + currentReportType.slice(1) + " Overview"} 
-              {/* Fallback title based on report type if no report is selected */}
+                ? selectedReport.teamName.charAt(0).toUpperCase() + selectedReport.teamName.slice(1)
+                : currentReportType.charAt(0).toUpperCase() + currentReportType.slice(1) + " Overview"}
+            {/* Fallback title based on report type if no report is selected */}
           </h2>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-start sm:items-center w-full sm:w-auto">
             <StopWordFilter value={stopWordFilter} onChange={setStopWordFilter} />
@@ -142,12 +142,12 @@ export function Dashboard() {
               <p className="text-muted-foreground">Loading {currentReportType} reports...</p>
             </div>
           ) : selectedReport ? (
-             <Tabs defaultValue="wordcloud" className="h-full flex flex-col lg:pb-4 lg:gap-y-4" key={selectedReport.id}> {/* Add key to Tabs to force re-render */}
+            <Tabs defaultValue="wordcloud" className="h-full flex flex-col lg:pb-4 lg:gap-y-4" key={selectedReport.id}> {/* Add key to Tabs to force re-render */}
               <TabsList className="grid w-full grid-cols-2 lg:h-[50px]">
-                <TabsTrigger value="wordcloud" className="text-xs md:text-sm lg:text-lg hover:bg-[#3A3A3A] data-[state=active]:shadow-[0_0px_100px_rgba(203,92,255,0.8)]" >
+                <TabsTrigger value="wordcloud" className=" text-xs md:text-sm lg:text-lg hover:bg-[#3A3A3A] data-[state=active]:shadow-[0_0px_100px_rgba(203,92,255,0.8)] data-[state=active]:bg-gray-900" >
                   Wordcloud
                 </TabsTrigger>
-                <TabsTrigger value="fulltext" className="text-xs md:text-sm lg:text-lg hover:bg-[#3A3A3A] data-[state=active]:shadow-[0_0px_100px_rgba(203,92,255,0.8)]">
+                <TabsTrigger value="fulltext" className="text-xs md:text-sm lg:text-lg hover:bg-[#3A3A3A] data-[state=active]:shadow-[0_0px_100px_rgba(203,92,255,0.8)] data-[state=active]:bg-gray-900">
                   Full Report
                 </TabsTrigger>
               </TabsList>
@@ -166,6 +166,8 @@ export function Dashboard() {
             </div>
           )}
         </div>
+
+        
       </div>
       <ReferencesDrawer
         isOpen={isReferencesOpen}
