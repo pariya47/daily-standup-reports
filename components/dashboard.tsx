@@ -142,7 +142,7 @@ export function Dashboard() {
               <p className="text-muted-foreground">Loading {currentReportType} reports...</p>
             </div>
           ) : selectedReport ? (
-            <Tabs defaultValue="wordcloud" className="h-full flex flex-col lg:pb-4 lg:gap-y-4" key={selectedReport.id}> {/* Add key to Tabs to force re-render */}
+            <Tabs defaultValue="wordcloud" className="h-full flex flex-col  md:gap-y-4 lg:pb-4 lg:gap-y-4" key={selectedReport.id}> {/* Add key to Tabs to force re-render */}
               <TabsList className="grid w-full grid-cols-2 lg:h-[50px]">
                 <TabsTrigger value="wordcloud" className=" text-xs md:text-sm lg:text-lg hover:bg-[#3A3A3A] data-[state=active]:shadow-[0_0px_100px_rgba(203,92,255,0.8)] data-[state=active]:bg-gray-900" >
                   Wordcloud
