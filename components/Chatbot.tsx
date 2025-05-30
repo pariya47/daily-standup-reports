@@ -100,27 +100,33 @@ const Chatbot: React.FC<ChatbotProps> = (props) => {
   // The data attributes on the div will update with props changes.
   }, [bot_id]); // Dependency array ensures this runs if bot_id changes, which implies a different bot.
 
-  // 4. Render the bn-customerchat div with data attributes
-  const dataAttributes: { [key: string]: string | boolean | undefined } = {
-    'data-bot_id': bot_id,
-    'data-bot_logo': bot_logo,
-    'data-bot_name': bot_name,
-    'data-theme_color': theme_color,
-    'data-locale': locale,
-    'data-logged_in_greeting': logged_in_greeting,
-    'data-greeting_message': greeting_message,
-    'data-default_open': default_open,
+  // 4. Render the bn-customerchat div with direct attributes
+  const attributes: { [key: string]: string | boolean | undefined } = {
+    // bot_id is required and will always be present
+    bot_id: bot_id,
+    // Optional attributes
+    bot_logo: bot_logo,
+    bot_name: bot_name,
+    theme_color: theme_color,
+    locale: locale,
+    logged_in_greeting: logged_in_greeting,
+    greeting_message: greeting_message,
+    default_open: default_open,
   };
 
   // Filter out undefined props so they don't appear as attributes
-  const filteredDataAttributes = Object.entries(dataAttributes).reduce((acc, [key, value]) => {
+  const filteredAttributes = Object.entries(attributes).reduce((acc, [key, value]) => {
     if (value !== undefined) {
+      // For boolean props like default_open, React handles them correctly.
+      // If true, it might render the attribute name only or attribute="true".
+      // If false, it might omit it for some boolean attributes or render attribute="false".
+      // The key here is that undefined attributes are skipped.
       (acc as any)[key] = value;
     }
     return acc;
   }, {} as { [key: string]: string | boolean });
 
-  return <div className="bn-customerchat" {...filteredDataAttributes}></div>;
+  return <div className="bn-customerchat" {...filteredAttributes}></div>;
 };
 
 export default Chatbot;
