@@ -13,7 +13,7 @@ import { ReferencesDrawer } from "@/components/references-drawer"
 import { CommandDialogDemo } from "@/components/cmd"
 import type { Report, ReportType } from "@/lib/types"
 import { fetchDailyReports, fetchWeeklyReports, fetchMonthlyReports } from "@/lib/supabase"
-import { Chatbot } from "@/components/Chatbot"; // Added Chatbot import
+import Chatbot from '@/components/Chatbot'; // Corrected Chatbot import
 
 export function Dashboard() {
   const [reports, setReports] = useState<Report[]>([])
