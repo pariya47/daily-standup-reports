@@ -1,16 +1,5 @@
 import { Suspense } from "react"
-import { CEODashboard } from "@/components/ceo-dashboard"
 import { Skeleton } from "@/components/ui/skeleton"
-
-export default function CEOPage() {
-  return (
-    <main className="min-h-screen">
-      <Suspense fallback={<DashboardSkeleton />}>
-        <CEODashboard />
-      </Suspense>
-    </main>
-  )
-}
 
 function DashboardSkeleton() {
   return (
