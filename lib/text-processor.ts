@@ -462,7 +462,7 @@ export function processText(
       cleanWord = word.toLowerCase()
     }
 
-    cleanWord = cleanWord.replace(/[^\w\u0E00-\u0E7F]/g, "")
+    cleanWord = cleanWord.replace(/[^\w\u0E00-\u0E7F\/-]/g, "")
 
     // Skip empty words, numbers, and stop words
     if (cleanWord.length < 2 || /^\d+$/.test(cleanWord) || stopWords.has(cleanWord.toLowerCase())) {
