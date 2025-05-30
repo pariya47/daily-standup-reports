@@ -73,10 +73,20 @@ export const mockReports = (teams: string[], reportType: ReportType, count: numb
           break;
       }
 
+      let createdAtDate;
+      if (reportType === 'monthly') {
+        createdAtDate = new Date();
+        createdAtDate.setUTCHours(0, 0, 0, 0);
+        createdAtDate.setUTCDate(1);
+        createdAtDate.setUTCMonth(createdAtDate.getUTCMonth() - index);
+      } else {
+        createdAtDate = new Date(Date.now() - index * (reportType === 'daily' ? 1 : 7) * 24 * 60 * 60 * 1000);
+      }
+
       return {
         id: `mock-${reportType}-${team}-${index}`,
         content: `Mock ${reportType} report summary for ${team}, day ${index + 1}. Details in structured fields.`,
-        createdAt: new Date(Date.now() - index * (reportType === 'daily' ? 1 : reportType === 'weekly' ? 7 : 30) * 24 * 60 * 60 * 1000), // Days ago
+        createdAt: createdAtDate,
         teamName: team,
         reportType: reportType,
         progress: mockProgress,

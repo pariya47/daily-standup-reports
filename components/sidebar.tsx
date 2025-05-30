@@ -139,7 +139,7 @@ function createPeriodSummary(reports: Report[], periodIdentifier: string, report
       const weekNum = parseInt(periodIdentifier.split('-')[1], 10);
       summaryDate = startOfWeek(new Date(year, 0, 1 + (weekNum - 1) * 7), { weekStartsOn: 1 });
   } else if (reportType === 'monthly' && reports.length > 0 && reports[0].createdAt) {
-      summaryDate = startOfMonth(reports[0].createdAt);
+      summaryDate = reports[0].createdAt;
   } else if (reportType === 'monthly') { // Fallback
       const year = parseInt(periodIdentifier.split('-')[0], 10);
       const monthIndex = parseInt(periodIdentifier.split('-')[1], 10) - 1;
