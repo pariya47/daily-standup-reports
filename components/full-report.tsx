@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { JSX } from "react/jsx-runtime";
+import { Navigation ,Frown,Blocks} from "lucide-react"
 
 interface FullReportProps {
   report: Report | null;
@@ -133,9 +134,9 @@ export function FullReport({ report }: FullReportProps) {
       return (
         <Tabs defaultValue="progress" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="progress" className="data-[state=active]:border-b-2 data-[state=active]:text-green-600 data-[state=active]:border-green-600 dark:data-[state=active]:text-green-400 dark:data-[state=active]:border-green-400">Progress</TabsTrigger>
-            <TabsTrigger value="blockers" className="data-[state=active]:border-b-2 data-[state=active]:text-red-600 data-[state=active]:border-red-600 dark:data-[state=active]:text-red-400 dark:data-[state=active]:border-red-400">Blockers</TabsTrigger>
-            <TabsTrigger value="nextSteps" className="data-[state=active]:border-b-2 data-[state=active]:text-blue-600 data-[state=active]:border-blue-600 dark:data-[state=active]:text-blue-400 dark:data-[state=active]:border-blue-400">Next Steps</TabsTrigger>
+            <TabsTrigger value="progress" className="data-[state=active]:border-b-2 data-[state=active]:text-green-600 data-[state=active]:border-green-600 dark:data-[state=active]:text-green-400 dark:data-[state=active]:border-green-400"><Blocks className="h-3 w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2" />Progress</TabsTrigger>
+            <TabsTrigger value="blockers" className="data-[state=active]:border-b-2 data-[state=active]:text-red-600 data-[state=active]:border-red-600 dark:data-[state=active]:text-red-400 dark:data-[state=active]:border-red-400"><Frown className="h-3 w-3 lg:h-4 lg:w-4 mr-1 sm:mr-2" />Blockers</TabsTrigger>
+            <TabsTrigger value="nextSteps" className="data-[state=active]:border-b-2 data-[state=active]:text-blue-600 data-[state=active]:border-blue-600 dark:data-[state=active]:text-blue-400 dark:data-[state=active]:border-blue-400"><Navigation className="h-3 w-3 lg:h-4 lg:w-4 mr-1 " /> Next Steps</TabsTrigger>
           </TabsList>
 
           <TabsContent value="progress" className="mt-4 p-3 rounded-lg border bg-green-50 dark:bg-green-900/20 border-green-500/30">
@@ -165,8 +166,8 @@ export function FullReport({ report }: FullReportProps) {
       return (
         <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
           {/* Progress Column */}
-          <div className="flex-1 p-3 rounded-lg border bg-green-100 dark:bg-green-900/30 border-green-500/50">
-            <h3 className="text-lg font-semibold mb-3 text-green-700 dark:text-green-300">Progress</h3>
+          <div className="flex-1 p-3 rounded-lg border bg-green-100 dark:bg-green-900/30 border-green-500/50 hover:shadow-[0_0px_30px_rgba(0,139,0,0.9)]">
+            <h3 className="text-lg font-semibold mb-3 text-green-700 dark:text-green-300 lg:text-3xl"><Blocks className="h- w-3 lg:h-6 lg:w-6 mr-1 sm:mr-2 inline" />Progress</h3>
             {(() => {
               const progressRendered = renderMarkdownLike(report.progress);
               return progressRendered ? progressRendered : <p className="text-sm text-gray-600 dark:text-gray-400 italic">No progress items reported.</p>;
@@ -174,8 +175,8 @@ export function FullReport({ report }: FullReportProps) {
           </div>
 
           {/* Blockers Column */}
-          <div className="flex-1 p-3 rounded-lg border bg-red-100 dark:bg-red-900/30 border-red-500/50">
-            <h3 className="text-lg font-semibold mb-3 text-red-700 dark:text-red-300">Blockers</h3>
+          <div className="flex-1 p-3 rounded-lg border bg-red-100 dark:bg-red-900/30 border-red-500/50 hover:shadow-[0_0px_30px_rgba(139,0,0,0.9)]">
+            <h3 className="text-lg font-semibold mb-3 text-red-700 dark:text-red-300 lg:text-3xl"><Frown className="h-3 w-3 lg:h-6 lg:w-6 mr-1 sm:mr-2 inline" />Blockers</h3>
             {(() => {
               const blockersRendered = renderMarkdownLike(report.blockers);
               return blockersRendered ? blockersRendered : <p className="text-sm text-gray-600 dark:text-gray-400 italic">No blockers reported.</p>;
@@ -183,8 +184,8 @@ export function FullReport({ report }: FullReportProps) {
           </div>
 
           {/* Next Steps Column */}
-          <div className="flex-1 p-3 rounded-lg border bg-blue-100 dark:bg-blue-900/30 border-blue-500/50">
-            <h3 className="text-lg font-semibold mb-3 text-blue-700 dark:text-blue-300">Next Steps</h3>
+          <div className="flex-1 p-3 rounded-lg border bg-blue-100 dark:bg-blue-900/30 border-blue-500/50 hover:shadow-[0_0px_30px_rgba(0,0,139,0.9)]">
+            <h3 className="text-lg font-semibold mb-3 text-blue-700 dark:text-blue-300 lg:text-3xl"><Navigation className="h-3 w-3 lg:h-6 lg:w-6 mr-1 sm:mr-2 inline" />Next Steps</h3>
             {(() => {
               const nextStepsRendered = renderMarkdownLike(report.nextSteps);
               return nextStepsRendered ? nextStepsRendered : <p className="text-sm text-gray-600 dark:text-gray-400 italic">No next steps defined.</p>;
